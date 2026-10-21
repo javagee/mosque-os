@@ -4,7 +4,7 @@ import { db } from '@/lib/db'
 import { Resend } from 'resend'
 import type Stripe from 'stripe'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+const getResend = () => new Resend(process.env.RESEND_API_KEY ?? 'RESEND_NOT_SET')
 
 export async function POST(req: NextRequest) {
   const body = await req.text()
@@ -51,7 +51,7 @@ async function handleDonation(session: Stripe.Checkout.Session) {
   if (email) {
     const mosqueName = process.env.NEXT_PUBLIC_MOSQUE_NAME ?? 'the mosque'
     const categoryLabel = category.charAt(0).toUpperCase() + category.slice(1)
-    await resend.emails.send({
+    await getResend().emails.send({
       from: process.env.RESEND_FROM_EMAIL ?? 'donations@imara.app',
       to: email,
       subject: `JazakAllah Khayran — your ${categoryLabel} donation`,
@@ -120,7 +120,7 @@ async function handleCouponPurchase(session: Stripe.Checkout.Session) {
       ? `<p style="font-size:14px;color:#6B7280;">Valid until: <strong>${new Date(campaign.redemption_end).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</strong></p>`
       : ''
 
-    await resend.emails.send({
+    await getResend().emails.send({
       from: process.env.RESEND_FROM_EMAIL ?? 'donations@imara.app',
       to: buyerEmail,
       subject: `Your ${campaign.name} coupon(s) — JazakAllah Khayran`,
