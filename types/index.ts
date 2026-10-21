@@ -101,8 +101,10 @@ export interface Order {
   merchant_portion: number
   status: OrderStatus
   created_at: string
-  paid_at?: string        // when buyer clicked "I've paid"
-  verified_at?: string    // when admin confirmed payment received
+  paid_at?: string         // when buyer clicked "I've paid"
+  verified_at?: string     // when admin confirmed payment received
+  merchant_settled?: boolean
+  merchant_settled_at?: string
 }
 
 export interface Coupon {

@@ -50,6 +50,11 @@ export async function getPendingOrders(): Promise<Order[]> {
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 }
 
+export async function getVerifiedOrders(): Promise<Order[]> {
+  const all = await getAllOrders()
+  return all.filter(o => o.status === 'verified')
+}
+
 export async function getAllOrders(): Promise<Order[]> {
   const r = await getRedis()
   if (r) {

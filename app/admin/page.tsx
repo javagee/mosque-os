@@ -38,7 +38,12 @@ export default async function AdminPage() {
             <h1 className="text-2xl font-800 text-[#1A3D2B]">Admin Dashboard</h1>
             <p className="text-sm text-gray-400 mt-1">Imara · Donation overview</p>
           </div>
-          <a href="/" className="text-sm text-[#1A3D2B] font-600 hover:underline">← Back to site</a>
+          <div className="flex items-center gap-4">
+            <a href="/admin/settlements" className="text-sm font-semibold text-[#1A3D2B] bg-[#1A3D2B]/10 px-4 py-2 rounded-xl hover:bg-[#1A3D2B]/20 transition-colors">
+              Settlement report →
+            </a>
+            <a href="/" className="text-sm text-[#1A3D2B] font-600 hover:underline">← Back to site</a>
+          </div>
         </div>
 
         {/* Pending PayNow verifications */}
