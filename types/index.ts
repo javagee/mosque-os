@@ -82,6 +82,29 @@ export interface Campaign {
   created_at: string
 }
 
+// ── Order types (PayNow flow) ─────────────────────────────────────────────────
+
+export type OrderStatus = 'pending_payment' | 'pending_verification' | 'verified' | 'cancelled'
+
+export interface Order {
+  reference: string
+  campaign_id: string
+  campaign_name: string
+  merchant_name: string
+  buyer_name: string
+  buyer_email: string
+  quantity: number
+  unit_price: number      // in cents
+  total: number           // in cents
+  currency: string
+  mosque_portion: number  // in cents (e.g. 50% of total)
+  merchant_portion: number
+  status: OrderStatus
+  created_at: string
+  paid_at?: string        // when buyer clicked "I've paid"
+  verified_at?: string    // when admin confirmed payment received
+}
+
 export interface Coupon {
   id: string
   token: string

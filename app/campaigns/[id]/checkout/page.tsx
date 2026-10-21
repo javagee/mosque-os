@@ -48,14 +48,14 @@ export default function CheckoutPage() {
     if (!validate() || !campaign) return
     setSubmitting(true)
     try {
-      const res = await fetch(`/api/campaigns/${id}/checkout`, {
+      const res = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ quantity, name, email }),
+        body: JSON.stringify({ campaign_id: id, quantity, buyer_name: name, buyer_email: email }),
       })
-      const { url, error } = await res.json()
+      const { reference, error } = await res.json()
       if (error) { alert(error); setSubmitting(false); return }
-      if (url) router.push(url)
+      if (reference) router.push(`/pay/${reference}`)
     } catch {
       setSubmitting(false)
     }
@@ -199,10 +199,10 @@ export default function CheckoutPage() {
             className="w-full py-4 rounded-2xl bg-[#C9A84C] text-[#1A3D2B] font-bold text-base hover:bg-[#D4B865] disabled:opacity-50 transition-colors shadow-sm"
           >
             {submitting
-              ? 'Processing…'
+              ? 'Creating order…'
               : soldOut
               ? 'Sold out'
-              : `Pay ${formatCurrency(total, campaign.currency)}`}
+              : `Pay with PayNow · ${formatCurrency(total, campaign.currency)}`}
           </button>
 
           <p className="text-xs text-center text-gray-400">

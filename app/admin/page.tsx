@@ -1,11 +1,17 @@
 import { db } from '@/lib/db'
 import { DONATION_CATEGORIES } from '@/types'
 import AdminCharts from '@/components/admin/AdminCharts'
+import AdminOrderVerify from '@/components/admin/AdminOrderVerify'
+import { getPendingOrders } from '@/lib/order-store'
 
 export const dynamic = 'force-dynamic'
 
 export default async function AdminPage() {
-  const [donors, campaigns] = await Promise.all([db.getDonors(), db.getCampaigns()])
+  const [donors, campaigns, pendingOrders] = await Promise.all([
+    db.getDonors(),
+    db.getCampaigns(),
+    getPendingOrders(),
+  ])
   const couponCounts = await db.getCouponCountsByCampaign(campaigns.map((c) => c.id))
 
   const totalRaisedPence = donors.reduce((sum, d) => sum + d.amount, 0)
@@ -34,6 +40,24 @@ export default async function AdminPage() {
           </div>
           <a href="/" className="text-sm text-[#1A3D2B] font-600 hover:underline">← Back to site</a>
         </div>
+
+        {/* Pending PayNow verifications */}
+        {pendingOrders.length > 0 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl overflow-hidden">
+            <div className="px-5 py-4 border-b border-amber-200 flex items-center gap-3">
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+              <h2 className="font-700 text-amber-800">
+                {pendingOrders.length} payment{pendingOrders.length > 1 ? 's' : ''} awaiting verification
+              </h2>
+              <span className="text-xs text-amber-600 ml-auto">Check your bank · then verify below</span>
+            </div>
+            <div className="divide-y divide-amber-100">
+              {pendingOrders.map(order => (
+                <AdminOrderVerify key={order.reference} order={order} />
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Donation stats */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
