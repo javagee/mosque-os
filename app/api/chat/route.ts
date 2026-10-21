@@ -142,7 +142,7 @@ Guidelines:
     }))
 
     const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -155,6 +155,8 @@ Guidelines:
     )
 
     if (!geminiRes.ok || !geminiRes.body) {
+      const errText = await geminiRes.text().catch(() => 'unknown')
+      console.error('Gemini error:', geminiRes.status, errText)
       const encoder = new TextEncoder()
       return new Response(encoder.encode('Our chat service is currently under maintenance. Please try again later — JazakAllah Khayran for your patience.'), {
         headers: { 'Content-Type': 'text/plain; charset=utf-8' },
