@@ -1,41 +1,25 @@
 import Link from 'next/link'
 import Nav from '@/components/layout/Nav'
-import { db } from '@/lib/db'
-import type { Coupon } from '@/types'
 
 export const dynamic = 'force-dynamic'
-
-async function getCouponsBySession(sessionId: string): Promise<Coupon[]> {
-  try {
-    // For Supabase provider — fetch by session
-    const supabase = (await import('@/lib/supabase')).getSupabaseAdmin()
-    if (!supabase) return []
-    const { data } = await supabase
-      .from('coupons')
-      .select('*, campaign:campaigns(*)')
-      .eq('stripe_session_id', sessionId)
-    return (data as Coupon[]) ?? []
-  } catch { return [] }
-}
 
 export default async function DonationSuccessPage({
   searchParams,
 }: {
   searchParams: Promise<{ session_id?: string; type?: string; demo?: string }>
 }) {
-  const { session_id, type, demo } = await searchParams
+  const { type, demo } = await searchParams
   const mosqueName = process.env.NEXT_PUBLIC_MOSQUE_NAME ?? 'Our Mosque'
   const isCoupon = type === 'coupon'
-  const coupons = isCoupon && session_id && !demo ? await getCouponsBySession(session_id) : []
+  const isDemo = demo === 'true'
 
   return (
     <div className="min-h-screen bg-[#F7F6F2]">
       <Nav mosqueName={mosqueName} />
 
       {/* Green confirmation band */}
-      <div className="bg-[#1A3D2B] pt-16 pb-24">
+      <div className="bg-[#1A3D2B] pt-16 pb-28">
         <div className="max-w-md mx-auto px-6 text-center">
-          {/* Check circle */}
           <div className="w-20 h-20 rounded-full bg-white/10 border border-white/20 flex items-center justify-center mx-auto mb-6">
             <svg className="w-10 h-10 text-[#C9A84C]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -47,40 +31,16 @@ export default async function DonationSuccessPage({
               ? 'Your coupon purchase was successful. Your digital coupons have been sent to your email.'
               : `Your donation to ${mosqueName} has been received. A confirmation has been sent to your email.`}
           </p>
+          {isDemo && (
+            <p className="mt-3 text-xs text-amber-300/80 bg-white/5 border border-white/10 rounded-xl px-4 py-2 inline-block">
+              Demo mode — no real payment was processed
+            </p>
+          )}
         </div>
       </div>
 
-      {/* Content card — floats over the green band */}
-      <div className="max-w-md mx-auto px-6 -mt-8 pb-16 space-y-4">
-
-        {/* Coupon links */}
-        {coupons.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
-              Your coupon{coupons.length > 1 ? 's' : ''}
-            </p>
-            <div className="space-y-2">
-              {coupons.map((c) => (
-                <Link
-                  key={c.id}
-                  href={`/coupons/${c.token}`}
-                  className="flex items-center justify-between p-3.5 rounded-xl bg-[#F0F7F3] hover:bg-[#E3F1E8] border border-[#1A3D2B]/10 transition-colors"
-                >
-                  <div>
-                    <p className="font-semibold text-[#1A3D2B] text-sm">{c.campaign?.name}</p>
-                    <p className="text-xs text-gray-400 font-mono mt-0.5">S/N: {c.serial_number}</p>
-                  </div>
-                  <svg className="w-4 h-4 text-[#1A3D2B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </Link>
-              ))}
-            </div>
-            <p className="text-xs text-gray-400 mt-3 text-center">
-              Present the QR code at any participating outlet to redeem
-            </p>
-          </div>
-        )}
+      {/* Floating card area */}
+      <div className="max-w-md mx-auto px-6 -mt-10 pb-16 space-y-4">
 
         {/* Verse */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
@@ -91,6 +51,27 @@ export default async function DonationSuccessPage({
             <p className="text-[#C9A84C] text-xs font-semibold mt-2">Quran 2:261</p>
           </div>
         </div>
+
+        {/* What happens next */}
+        {isCoupon && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+            <h2 className="text-sm font-bold text-gray-700 mb-3">What happens next?</h2>
+            <ol className="space-y-3">
+              {[
+                { step: '1', text: 'Check your email for your digital coupon' },
+                { step: '2', text: 'Visit the merchant and show the QR code' },
+                { step: '3', text: 'Enjoy your meal — your support means a lot' },
+              ].map(({ step, text }) => (
+                <li key={step} className="flex items-start gap-3">
+                  <span className="w-6 h-6 rounded-full bg-[#1A3D2B] text-white text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
+                    {step}
+                  </span>
+                  <span className="text-sm text-gray-600">{text}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex gap-3 pt-2">

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import type { Campaign } from '@/types'
 
@@ -13,29 +14,12 @@ function formatCurrency(amount: number, currency: string) {
 }
 
 export default function CampaignPurchaseForm({ campaign }: { campaign: Campaign }) {
+  const router = useRouter()
   const [quantity, setQuantity] = useState(1)
-  const [loading, setLoading] = useState(false)
 
   const soldOut = campaign.total_coupons != null && campaign.coupons_sold >= campaign.total_coupons
   const remaining = campaign.total_coupons ? campaign.total_coupons - campaign.coupons_sold : null
   const maxQty = remaining ? Math.min(remaining, 10) : 10
-
-  async function handlePurchase() {
-    if (soldOut) return
-    setLoading(true)
-    try {
-      const res = await fetch(`/api/campaigns/${campaign.id}/checkout`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ quantity }),
-      })
-      const { url, error } = await res.json()
-      if (error) { alert(error); setLoading(false); return }
-      if (url) window.location.href = url
-    } catch {
-      setLoading(false)
-    }
-  }
 
   const total = campaign.coupon_price * quantity
   const unitPrice = formatCurrency(campaign.coupon_price, campaign.currency)
@@ -75,11 +59,10 @@ export default function CampaignPurchaseForm({ campaign }: { campaign: Campaign 
           </div>
 
           <Button
-            onClick={handlePurchase}
-            disabled={loading || soldOut}
+            onClick={() => router.push(`/campaigns/${campaign.id}/checkout?qty=${quantity}`)}
             className="w-full py-6 rounded-xl text-base font-700 bg-[#1A3D2B] hover:bg-[#2D6A4F] text-white transition-colors"
           >
-            {loading ? 'Redirecting…' : `Buy ${quantity} coupon${quantity > 1 ? 's' : ''} · ${totalPrice}`}
+            Checkout · {totalPrice}
           </Button>
 
           <p className="text-xs text-center text-gray-400">
