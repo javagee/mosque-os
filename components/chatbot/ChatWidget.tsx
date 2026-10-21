@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import ReactMarkdown from 'react-markdown'
 import type { ChatMessage } from '@/types'
 
 export default function ChatWidget() {
@@ -99,7 +100,23 @@ export default function ChatWidget() {
                       : 'bg-white text-gray-800 border border-gray-100 rounded-bl-sm shadow-sm'
                   }`}
                 >
-                  {msg.content || (
+                  {msg.content ? (
+                    msg.role === 'assistant' ? (
+                      <ReactMarkdown
+                        components={{
+                          p: ({ children }) => <p className="mb-1.5 last:mb-0">{children}</p>,
+                          strong: ({ children }) => <strong className="font-semibold text-gray-900">{children}</strong>,
+                          ul: ({ children }) => <ul className="mt-1 mb-1.5 space-y-0.5 pl-3">{children}</ul>,
+                          ol: ({ children }) => <ol className="mt-1 mb-1.5 space-y-0.5 pl-3 list-decimal">{children}</ol>,
+                          li: ({ children }) => <li className="text-gray-700 before:content-['•'] before:mr-1.5 before:text-[#C9A84C]">{children}</li>,
+                          a: ({ href, children }) => <a href={href} target="_blank" rel="noopener noreferrer" className="text-[#1A3D2B] underline font-medium hover:text-[#2D6A4F]">{children}</a>,
+                          code: ({ children }) => <code className="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono">{children}</code>,
+                        }}
+                      >
+                        {msg.content}
+                      </ReactMarkdown>
+                    ) : msg.content
+                  ) : (
                     <span className="flex items-center gap-1.5 py-1 px-1">
                       <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                       <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '180ms' }} />
