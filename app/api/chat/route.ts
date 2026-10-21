@@ -85,7 +85,7 @@ Guidelines:
       ...messages,
     ]
     const ollamaAbort = new AbortController()
-    const ollamaTimeout = setTimeout(() => ollamaAbort.abort(), 60000)
+    const ollamaTimeout = setTimeout(() => ollamaAbort.abort(), 120000)
     let ollamaRes: Response
     try {
       ollamaRes = await fetch(`${OLLAMA_URL}/api/chat`, {

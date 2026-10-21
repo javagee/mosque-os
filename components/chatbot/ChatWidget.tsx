@@ -26,6 +26,8 @@ export default function ChatWidget() {
     setMessages(newMessages)
     setInput('')
     setLoading(true)
+    // Add empty assistant message immediately so typing dots appear right away
+    setMessages(prev => [...prev, { role: 'assistant', content: '' }])
 
     const res = await fetch('/api/chat', {
       method: 'POST',
@@ -38,7 +40,6 @@ export default function ChatWidget() {
     const reader = res.body.getReader()
     const decoder = new TextDecoder()
     let assistantText = ''
-    setMessages(prev => [...prev, { role: 'assistant', content: '' }])
 
     while (true) {
       const { done, value } = await reader.read()
@@ -99,10 +100,10 @@ export default function ChatWidget() {
                   }`}
                 >
                   {msg.content || (
-                    <span className="flex gap-1">
-                      <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    <span className="flex items-center gap-1.5 py-1 px-1">
+                      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '180ms' }} />
+                      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '360ms' }} />
                     </span>
                   )}
                 </div>
