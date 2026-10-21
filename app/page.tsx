@@ -37,8 +37,8 @@ export default function HomePage() {
         <div className="max-w-5xl mx-auto px-6 pt-16 pb-24 sm:pt-20 sm:pb-28">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div>
-              <p className="text-[#C9A84C] text-sm font-semibold tracking-widest mb-5">إِمَارَة · Imara</p>
-              <h1 className="text-5xl sm:text-6xl font-bold leading-[1.1] tracking-tight">
+              <p className="text-[#C9A84C] text-2xl sm:text-3xl font-semibold tracking-wide mb-6">إِمَارَة · Imara</p>
+              <h1 className="text-4xl sm:text-5xl font-bold leading-[1.1] tracking-tight">
                 Developing,<br />building and<br />flourishing.
               </h1>
               <p className="mt-6 text-green-200/60 text-lg leading-relaxed max-w-sm">
