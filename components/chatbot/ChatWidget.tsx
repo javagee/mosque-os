@@ -59,7 +59,7 @@ export default function ChatWidget() {
       {/* Floating button */}
       <button
         onClick={() => setOpen(o => !o)}
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-[#1A3D2B] text-white shadow-lg flex items-center justify-center hover:bg-[#2D6A4F] transition-colors z-50"
+        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-[#1A3D2B] text-white shadow-xl flex items-center justify-center hover:bg-[#2D6A4F] transition-colors z-50 ring-4 ring-[#C9A84C]/30"
         aria-label="Open chat"
       >
         {open ? (
@@ -78,8 +78,8 @@ export default function ChatWidget() {
         <div className="fixed bottom-24 right-6 w-80 sm:w-96 bg-white rounded-2xl shadow-xl border border-gray-100 flex flex-col z-50 overflow-hidden" style={{ maxHeight: '520px' }}>
           {/* Header */}
           <div className="bg-[#1A3D2B] px-4 py-3 flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-[#C9A84C]/20 flex items-center justify-center">
-              <span className="arabic text-[#C9A84C] text-sm">إ</span>
+            <div className="w-10 h-10 rounded-full bg-[#C9A84C] flex items-center justify-center shadow-md ring-2 ring-[#C9A84C]/40">
+              <span className="arabic text-[#1A3D2B] text-lg font-bold">إ</span>
             </div>
             <div>
               <p className="text-white font-600 text-sm">Imara Assistant</p>
