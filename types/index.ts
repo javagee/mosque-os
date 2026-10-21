@@ -120,4 +120,6 @@ export interface Coupon {
   redeemed_at?: string
   redeemed_outlet?: string
   created_at: string
+  merchant_settled?: boolean
+  merchant_settled_at?: string
 }

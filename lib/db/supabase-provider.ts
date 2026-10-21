@@ -103,4 +103,25 @@ export class SupabaseProvider implements DbProvider {
   async createDonor(donor: DonorInsert): Promise<void> {
     await this.db.from('donors').insert({ ...donor, status: 'completed' })
   }
+
+  async getRedeemedCoupons(): Promise<Coupon[]> {
+    try {
+      const { data } = await this.db
+        .from('coupons')
+        .select('*, campaign:campaigns(*)')
+        .eq('status', 'redeemed')
+        .order('redeemed_at', { ascending: false })
+      return (data as Coupon[]) ?? []
+    } catch { return [] }
+  }
+
+  async markCouponsSettled(tokens: string[]): Promise<void> {
+    if (!tokens.length) return
+    try {
+      await this.db
+        .from('coupons')
+        .update({ merchant_settled: true, merchant_settled_at: new Date().toISOString() })
+        .in('token', tokens)
+    } catch { /* silently fail */ }
+  }
 }

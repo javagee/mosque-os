@@ -72,7 +72,6 @@ export class UpstashProvider implements DbProvider {
 
   async redeemCoupon(token: string, outlet: string | null): Promise<Coupon | null> {
     const redis = getRedis()
-    // Lua script for atomic check-and-set
     const script = `
       local raw = redis.call('GET', KEYS[1])
       if raw == false then return nil end
@@ -83,11 +82,31 @@ export class UpstashProvider implements DbProvider {
       if ARGV[2] ~= '' then c['redeemed_outlet'] = ARGV[2] end
       redis.call('SET', KEYS[1], cjson.encode(c))
       redis.call('INCR', 'campaign:' .. c['campaign_id'] .. ':coupons_redeemed')
+      redis.call('SADD', 'coupons:redeemed', c['token'])
       return cjson.encode(c)
     `
     const result = await redis.eval(script, [`coupon:${token}`], [new Date().toISOString(), outlet ?? ''])
     if (!result) return null
     return typeof result === 'string' ? JSON.parse(result) : null
+  }
+
+  async getRedeemedCoupons(): Promise<Coupon[]> {
+    const redis = getRedis()
+    const tokens = await redis.smembers('coupons:redeemed')
+    if (!tokens.length) return []
+    const coupons = await Promise.all(tokens.map(t => redis.get<Coupon>(`coupon:${t}`)))
+    return coupons
+      .filter((c): c is Coupon => c !== null)
+      .sort((a, b) => new Date(b.redeemed_at ?? b.created_at).getTime() - new Date(a.redeemed_at ?? a.created_at).getTime())
+  }
+
+  async markCouponsSettled(tokens: string[]): Promise<void> {
+    const redis = getRedis()
+    const now = new Date().toISOString()
+    await Promise.all(tokens.map(async token => {
+      const coupon = await redis.get<Coupon>(`coupon:${token}`)
+      if (coupon) await redis.set(`coupon:${token}`, { ...coupon, merchant_settled: true, merchant_settled_at: now })
+    }))
   }
 
   async getCouponCountsByCampaign(campaignIds: string[]): Promise<Record<string, CouponCounts>> {

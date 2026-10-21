@@ -40,6 +40,10 @@ export interface DbProvider {
   getCouponCountsByCampaign(campaignIds: string[]): Promise<Record<string, CouponCounts>>
   countCouponsForCampaign(campaignId: string): Promise<number>
 
+  // Settlement
+  getRedeemedCoupons(): Promise<Coupon[]>
+  markCouponsSettled(tokens: string[]): Promise<void>
+
   // Donors
   getDonors(): Promise<Donor[]>
   createDonor(donor: DonorInsert): Promise<void>

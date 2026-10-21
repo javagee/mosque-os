@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getOrder, saveOrder } from '@/lib/order-store'
+import { db } from '@/lib/db'
+import type { CouponInsert } from '@/lib/db/types'
 
 function formatCurrency(amount: number, currency: string) {
   return new Intl.NumberFormat('en-SG', {
@@ -36,6 +38,26 @@ export async function POST(
 
   const updated = { ...order, status: 'pending_verification' as const, paid_at: new Date().toISOString() }
   await saveOrder(updated)
+
+  // Store coupons in DB so merchants can scan them
+  try {
+    const campaign = await db.getCampaign(order.campaign_id)
+    if (campaign) {
+      const inserts: CouponInsert[] = tokens.map((token, i) => ({
+        token,
+        serial_number: `${order.reference}-${String(i + 1).padStart(2, '0')}`,
+        campaign_id: order.campaign_id,
+        buyer_name: order.buyer_name,
+        buyer_email: order.buyer_email,
+        stripe_session_id: order.reference,
+        status: 'active' as const,
+      }))
+      await db.createCoupons(inserts, campaign)
+      await db.updateCampaignSoldCount(order.campaign_id, order.quantity)
+    }
+  } catch (e) {
+    console.error('Failed to store coupons in DB:', e)
+  }
 
   // Send voucher email via Resend if configured
   const RESEND_API_KEY = process.env.RESEND_API_KEY
