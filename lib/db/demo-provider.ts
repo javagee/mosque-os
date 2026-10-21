@@ -94,7 +94,7 @@ export class DemoProvider implements DbProvider {
   async createCoupons(): Promise<Coupon[]> { return [] }
   async redeemCoupon(): Promise<Coupon | null> { return null }
   async getCouponCountsByCampaign(campaignIds: string[]): Promise<Record<string, CouponCounts>> {
-    return Object.fromEntries(campaignIds.map((id) => [id, { active: 0, redeemed: 0 }]))
+    return Object.fromEntries(campaignIds.map((id) => [id, { total: 0, redeemed: 0 }]))
   }
   async countCouponsForCampaign(): Promise<number> { return 0 }
   async getDonors(): Promise<Donor[]> { return [] }
