@@ -2,15 +2,17 @@ import { NextRequest } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { getPrayerTimes } from '@/lib/prayer-times'
 
-// Priority: Ollama (local, no key) → Claude API (cloud) → Demo mode (canned)
-const isAnthropicConfigured =
-  !!process.env.ANTHROPIC_API_KEY &&
-  !process.env.ANTHROPIC_API_KEY.includes('REPLACE_ME')
-
+// Priority: Ollama (local) → Gemini → Claude → Demo
 const isOllamaConfigured = process.env.OLLAMA_ENABLED === 'true'
 const OLLAMA_URL = process.env.OLLAMA_URL ?? 'http://localhost:11434'
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL ?? 'llama3.2:1b'
 
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY
+const isGeminiConfigured = !!GEMINI_API_KEY && !GEMINI_API_KEY.includes('REPLACE_ME')
+
+const isAnthropicConfigured =
+  !!process.env.ANTHROPIC_API_KEY &&
+  !process.env.ANTHROPIC_API_KEY.includes('REPLACE_ME')
 const anthropicClient = isAnthropicConfigured
   ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
   : null
@@ -18,19 +20,19 @@ const anthropicClient = isAnthropicConfigured
 export async function POST(req: NextRequest) {
   const { messages } = await req.json()
 
-  // Demo mode — canned response when no LLM is configured
-  if (!anthropicClient && !isOllamaConfigured) {
-    const demoReply = "Assalamu Alaikum! I'm the Imara assistant (demo mode). To enable live AI, set OLLAMA_ENABLED=true in .env.local (no API key needed) or add your ANTHROPIC_API_KEY. I can answer questions about prayer times, Zakat, donations, and more!"
-    const encoder = new TextEncoder()
-    return new Response(encoder.encode(demoReply), {
-      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-    })
-  }
-
   const lat = parseFloat(process.env.NEXT_PUBLIC_MOSQUE_LAT ?? '51.5074')
   const lng = parseFloat(process.env.NEXT_PUBLIC_MOSQUE_LNG ?? '-0.1278')
   const mosqueName = process.env.NEXT_PUBLIC_MOSQUE_NAME ?? 'Our Mosque'
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+
+  // Demo mode
+  if (!isOllamaConfigured && !isGeminiConfigured && !anthropicClient) {
+    const encoder = new TextEncoder()
+    return new Response(
+      encoder.encode("Assalamu Alaikum! I'm the Imara assistant (demo mode). Add a GEMINI_API_KEY to enable live AI responses."),
+      { headers: { 'Content-Type': 'text/plain; charset=utf-8' } }
+    )
+  }
 
   let prayerContext = ''
   try {
@@ -73,17 +75,14 @@ Donation categories available:
 Guidelines:
 - Be warm, respectful, and concise
 - Use Islamic greetings naturally (Assalamu Alaikum, JazakAllah Khayran)
-- For complex Fiqh questions, say: "For this question, I'd recommend speaking with our Imam directly — please contact the mosque."
+- For complex Fiqh questions, say: "For this question, I'd recommend speaking with our Imam directly."
 - Never give specific financial/legal/medical advice
 - Keep responses under 150 words unless a detailed answer is clearly needed
 - If asked about donations, always provide the link: ${appUrl}/donate`
 
-  // ── Ollama (local, no API key) ────────────────────
+  // ── Ollama (local) ────────────────────────────────
   if (isOllamaConfigured) {
-    const ollamaMessages = [
-      { role: 'system', content: systemPrompt },
-      ...messages,
-    ]
+    const ollamaMessages = [{ role: 'system', content: systemPrompt }, ...messages]
     const ollamaAbort = new AbortController()
     const ollamaTimeout = setTimeout(() => ollamaAbort.abort(), 120000)
     let ollamaRes: Response
@@ -135,6 +134,65 @@ Guidelines:
     return new Response(readable, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } })
   }
 
+  // ── Gemini (streaming SSE) ────────────────────────
+  if (isGeminiConfigured) {
+    const contents = messages.map((m: { role: string; content: string }) => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }],
+    }))
+
+    const geminiRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: systemPrompt }] },
+          contents,
+          generationConfig: { maxOutputTokens: 512, temperature: 0.7 },
+        }),
+      }
+    )
+
+    if (!geminiRes.ok || !geminiRes.body) {
+      const encoder = new TextEncoder()
+      return new Response(encoder.encode('Our chat service is currently under maintenance. Please try again later — JazakAllah Khayran for your patience.'), {
+        headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+      })
+    }
+
+    const encoder = new TextEncoder()
+    const reader = geminiRes.body.getReader()
+    const readable = new ReadableStream({
+      async start(controller) {
+        const dec = new TextDecoder()
+        let buffer = ''
+        try {
+          while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
+            buffer += dec.decode(value, { stream: true })
+            const lines = buffer.split('\n')
+            buffer = lines.pop() ?? ''
+            for (const line of lines) {
+              if (!line.startsWith('data: ')) continue
+              const json = line.slice(6).trim()
+              if (!json || json === '[DONE]') continue
+              try {
+                const chunk = JSON.parse(json)
+                const text = chunk.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+                if (text) controller.enqueue(encoder.encode(text))
+              } catch { /* skip malformed */ }
+            }
+          }
+        } finally {
+          controller.close()
+        }
+      },
+    })
+    return new Response(readable, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } })
+  }
+
   // ── Claude API ────────────────────────────────────
   const stream = anthropicClient!.messages.stream({
     model: 'claude-sonnet-4-6',
@@ -147,18 +205,12 @@ Guidelines:
   const readable = new ReadableStream({
     async start(controller) {
       for await (const chunk of stream) {
-        if (
-          chunk.type === 'content_block_delta' &&
-          chunk.delta.type === 'text_delta'
-        ) {
+        if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
           controller.enqueue(encoder.encode(chunk.delta.text))
         }
       }
       controller.close()
     },
   })
-
-  return new Response(readable, {
-    headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-  })
+  return new Response(readable, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } })
 }
