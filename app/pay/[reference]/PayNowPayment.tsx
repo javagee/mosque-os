@@ -12,7 +12,7 @@ function formatCurrency(amount: number, currency: string) {
   }).format(amount / 100)
 }
 
-function useCountdown(createdAt: string, minutes = 15) {
+function useCountdown(createdAt: string, minutes = 30) {
   const expiry = new Date(createdAt).getTime() + minutes * 60 * 1000
   const [remaining, setRemaining] = useState(Math.max(0, expiry - Date.now()))
 

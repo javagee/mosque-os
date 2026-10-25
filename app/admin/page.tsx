@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import { DONATION_CATEGORIES } from '@/types'
 import AdminCharts from '@/components/admin/AdminCharts'
 import AdminOrderVerify from '@/components/admin/AdminOrderVerify'
+import AdminSignOut from '@/components/admin/AdminSignOut'
 import { getPendingOrders } from '@/lib/order-store'
 
 export const dynamic = 'force-dynamic'
@@ -46,6 +47,7 @@ export default async function AdminPage() {
               Settlement →
             </a>
             <a href="/" className="text-sm text-[#1A3D2B] font-600 hover:underline">← Back to site</a>
+            <AdminSignOut />
           </div>
         </div>
 
