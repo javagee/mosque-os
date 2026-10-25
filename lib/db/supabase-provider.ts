@@ -1,6 +1,6 @@
 import { getSupabaseAdmin } from '@/lib/supabase'
 import type { Campaign, Coupon, Donor } from '@/types'
-import type { DbProvider, CouponInsert, DonorInsert, CouponCounts } from './types'
+import type { DbProvider, CouponInsert, DonorInsert, CouponCounts, CampaignInsertData } from './types'
 
 export class SupabaseProvider implements DbProvider {
   private get db() {
@@ -20,9 +20,41 @@ export class SupabaseProvider implements DbProvider {
     } catch { return [] }
   }
 
+  async getAllCampaigns(): Promise<Campaign[]> {
+    try {
+      const { data } = await this.db
+        .from('campaigns')
+        .select('*')
+        .order('created_at', { ascending: false })
+      return (data as Campaign[]) ?? []
+    } catch { return [] }
+  }
+
   async getCampaign(id: string): Promise<Campaign | null> {
     try {
       const { data } = await this.db.from('campaigns').select('*').eq('id', id).single()
+      return (data as Campaign) ?? null
+    } catch { return null }
+  }
+
+  async createCampaign(data: CampaignInsertData): Promise<Campaign> {
+    const { data: created, error } = await this.db
+      .from('campaigns')
+      .insert({ ...data, coupons_sold: 0 })
+      .select()
+      .single()
+    if (error) throw new Error(error.message)
+    return created as Campaign
+  }
+
+  async updateCampaign(id: string, updates: Partial<CampaignInsertData>): Promise<Campaign | null> {
+    try {
+      const { data } = await this.db
+        .from('campaigns')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single()
       return (data as Campaign) ?? null
     } catch { return null }
   }

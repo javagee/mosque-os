@@ -85,10 +85,13 @@ const DEMO_CAMPAIGNS: Campaign[] = [
 ]
 
 export class DemoProvider implements DbProvider {
-  async getCampaigns(): Promise<Campaign[]> { return DEMO_CAMPAIGNS }
+  async getCampaigns(): Promise<Campaign[]> { return DEMO_CAMPAIGNS.filter(c => c.active) }
+  async getAllCampaigns(): Promise<Campaign[]> { return DEMO_CAMPAIGNS }
   async getCampaign(id: string): Promise<Campaign | null> {
     return DEMO_CAMPAIGNS.find((c) => c.id === id) ?? null
   }
+  async createCampaign(): Promise<Campaign> { return DEMO_CAMPAIGNS[0] }
+  async updateCampaign(): Promise<Campaign | null> { return null }
   async updateCampaignSoldCount(): Promise<void> {}
   async getCouponByToken(): Promise<Coupon | null> { return null }
   async createCoupons(): Promise<Coupon[]> { return [] }

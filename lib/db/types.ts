@@ -27,10 +27,25 @@ export interface CouponCounts {
   redeemed: number
 }
 
+export interface CampaignInsertData {
+  name: string
+  merchant_name: string
+  description?: string
+  coupon_price: number
+  currency: string
+  total_coupons?: number
+  redemption_end?: string
+  image_url?: string
+  active: boolean
+}
+
 export interface DbProvider {
   // Campaigns
   getCampaigns(): Promise<Campaign[]>
+  getAllCampaigns(): Promise<Campaign[]>
   getCampaign(id: string): Promise<Campaign | null>
+  createCampaign(data: CampaignInsertData): Promise<Campaign>
+  updateCampaign(id: string, updates: Partial<CampaignInsertData>): Promise<Campaign | null>
   updateCampaignSoldCount(id: string, increment: number): Promise<void>
 
   // Coupons

@@ -1,6 +1,6 @@
 import { Redis } from '@upstash/redis'
 import type { Campaign, Coupon, Donor } from '@/types'
-import type { DbProvider, CouponInsert, DonorInsert, CouponCounts } from './types'
+import type { DbProvider, CouponInsert, DonorInsert, CouponCounts, CampaignInsertData } from './types'
 
 function getRedis() {
   return new Redis({
@@ -29,9 +29,64 @@ export class UpstashProvider implements DbProvider {
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
   }
 
+  async getAllCampaigns(): Promise<Campaign[]> {
+    const redis = getRedis()
+    // Union campaigns:all (manually created) + campaigns:active (seeded) for backwards compat
+    const [allIds, activeIds] = await Promise.all([
+      redis.smembers('campaigns:all'),
+      redis.smembers('campaigns:active'),
+    ])
+    const ids = [...new Set([...allIds, ...activeIds])]
+    if (!ids.length) return []
+    const campaigns = await Promise.all(ids.map((id) => redis.get<Campaign>(`campaign:${id}`)))
+    return campaigns
+      .filter((c): c is Campaign => c !== null)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+  }
+
   async getCampaign(id: string): Promise<Campaign | null> {
     const redis = getRedis()
     return redis.get<Campaign>(`campaign:${id}`)
+  }
+
+  async createCampaign(data: CampaignInsertData): Promise<Campaign> {
+    const redis = getRedis()
+    const id = crypto.randomUUID()
+    const campaign: Campaign = {
+      id,
+      name: data.name,
+      merchant_name: data.merchant_name,
+      description: data.description,
+      coupon_price: data.coupon_price,
+      currency: data.currency,
+      total_coupons: data.total_coupons,
+      coupons_sold: 0,
+      redemption_end: data.redemption_end,
+      image_url: data.image_url,
+      active: data.active,
+      created_at: new Date().toISOString(),
+    }
+    const ops: Promise<unknown>[] = [
+      redis.set(`campaign:${id}`, campaign),
+      redis.sadd('campaigns:all', id),
+    ]
+    if (data.active) ops.push(redis.sadd('campaigns:active', id))
+    await Promise.all(ops)
+    return campaign
+  }
+
+  async updateCampaign(id: string, updates: Partial<CampaignInsertData>): Promise<Campaign | null> {
+    const redis = getRedis()
+    const existing = await redis.get<Campaign>(`campaign:${id}`)
+    if (!existing) return null
+    const updated: Campaign = { ...existing, ...updates }
+    const ops: Promise<unknown>[] = [redis.set(`campaign:${id}`, updated)]
+    if (updates.active !== undefined) {
+      if (updates.active) ops.push(redis.sadd('campaigns:active', id))
+      else ops.push(redis.srem('campaigns:active', id))
+    }
+    await Promise.all(ops)
+    return updated
   }
 
   async updateCampaignSoldCount(id: string, increment: number): Promise<void> {
