@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import type { Coupon } from '@/types'
@@ -17,6 +17,7 @@ function formatCurrency(amount: number, currency: string) {
 
 function RedeemContent() {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const tokenFromUrl = searchParams.get('token') ?? ''
 
   const [token, setToken] = useState(tokenFromUrl)
@@ -73,11 +74,24 @@ function RedeemContent() {
     (campaign?.redemption_end && new Date() > new Date(campaign.redemption_end))
   const isActive = coupon?.status === 'active' && !isExpired
 
+  async function handleLogout() {
+    await fetch('/api/merchant/auth', { method: 'DELETE' })
+    router.push('/merchant/login')
+  }
+
   return (
     <div className="max-w-sm w-full mx-auto">
-      <div className="mb-6">
-        <p className="text-xs font-600 text-[#C9A84C] mb-1 tracking-wide">Merchant · Imara</p>
-        <h1 className="text-2xl font-800 text-[#1A3D2B]">Coupon redemption</h1>
+      <div className="mb-6 flex items-start justify-between">
+        <div>
+          <p className="text-xs font-600 text-[#C9A84C] mb-1 tracking-wide">Merchant · Imara</p>
+          <h1 className="text-2xl font-800 text-[#1A3D2B]">Coupon redemption</h1>
+        </div>
+        <button
+          onClick={handleLogout}
+          className="text-xs text-gray-400 hover:text-gray-600 mt-1 transition-colors"
+        >
+          Sign out
+        </button>
       </div>
 
       {/* Token lookup (when no URL param) */}
