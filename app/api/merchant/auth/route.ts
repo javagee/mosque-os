@@ -4,7 +4,7 @@ const COOKIE = 'merchant_auth'
 const MAX_AGE = 60 * 60 * 8 // 8 hours
 
 export async function POST(req: NextRequest) {
-  const { pin } = await req.json() as { pin: string }
+  const { pin, merchantName } = await req.json() as { pin: string; merchantName?: string }
   const validPin = process.env.MERCHANT_PIN
 
   if (!validPin) {
@@ -15,7 +15,8 @@ export async function POST(req: NextRequest) {
   }
 
   const res = NextResponse.json({ success: true })
-  res.cookies.set(COOKIE, 'authenticated', {
+  // Store merchant name as cookie value so history page can filter by it
+  res.cookies.set(COOKIE, merchantName?.trim() || 'authenticated', {
     httpOnly: true,
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
