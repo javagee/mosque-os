@@ -28,7 +28,7 @@ export default async function DonationSuccessPage({
           <h1 className="text-4xl font-bold text-white">JazakAllah<br />Khayran</h1>
           <p className="text-green-200/70 mt-4 text-sm leading-relaxed">
             {isCoupon
-              ? 'Your coupon purchase was successful. Your digital coupons have been sent to your email.'
+              ? 'Payment received. The mosque team will verify your PayNow transfer and email your e-coupon within a few hours. JazakAllah Khayran.'
               : `Your donation to ${mosqueName} has been received. A confirmation has been sent to your email.`}
           </p>
           {isDemo && (
@@ -58,9 +58,9 @@ export default async function DonationSuccessPage({
             <h2 className="text-sm font-bold text-gray-700 mb-3">What happens next?</h2>
             <ol className="space-y-3">
               {[
-                { step: '1', text: 'Check your email for your digital coupon' },
-                { step: '2', text: 'Visit the merchant and show the QR code' },
-                { step: '3', text: 'Enjoy your meal — your support means a lot' },
+                { step: '1', text: 'The mosque team will verify your PayNow transfer (usually within a few hours)' },
+                { step: '2', text: 'Your e-coupon will be emailed to you once verified' },
+                { step: '3', text: 'Visit the merchant, show the QR code, and enjoy — your support means a lot' },
               ].map(({ step, text }) => (
                 <li key={step} className="flex items-start gap-3">
                   <span className="w-6 h-6 rounded-full bg-[#1A3D2B] text-white text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">

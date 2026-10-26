@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getOrder, saveOrder } from '@/lib/order-store'
-import { db } from '@/lib/db'
-import type { CouponInsert } from '@/lib/db/types'
 
 function formatCurrency(amount: number, currency: string) {
   return new Intl.NumberFormat('en-SG', {
@@ -9,16 +7,6 @@ function formatCurrency(amount: number, currency: string) {
     currency: currency.toUpperCase(),
     minimumFractionDigits: 0,
   }).format(amount / 100)
-}
-
-function generateToken(): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-  let token = ''
-  for (let i = 0; i < 12; i++) {
-    if (i === 4 || i === 8) token += '-'
-    token += chars[Math.floor(Math.random() * chars.length)]
-  }
-  return token
 }
 
 export async function POST(
@@ -33,74 +21,88 @@ export async function POST(
     return NextResponse.json({ error: 'Order already confirmed' }, { status: 400 })
   }
 
-  const tokens: string[] = []
-  for (let i = 0; i < order.quantity; i++) tokens.push(generateToken())
-
   const updated = { ...order, status: 'pending_verification' as const, paid_at: new Date().toISOString() }
   await saveOrder(updated)
 
-  // Store coupons in DB so merchants can scan them
-  try {
-    const campaign = await db.getCampaign(order.campaign_id)
-    if (campaign) {
-      const inserts: CouponInsert[] = tokens.map((token, i) => ({
-        token,
-        serial_number: `${order.reference}-${String(i + 1).padStart(2, '0')}`,
-        campaign_id: order.campaign_id,
-        buyer_name: order.buyer_name,
-        buyer_email: order.buyer_email,
-        stripe_session_id: order.reference,
-        status: 'active' as const,
-      }))
-      await db.createCoupons(inserts, campaign)
-      await db.updateCampaignSoldCount(order.campaign_id, order.quantity)
-    }
-  } catch (e) {
-    console.error('Failed to store coupons in DB:', e)
-  }
-
-  // Send voucher email via Resend if configured
   const RESEND_API_KEY = process.env.RESEND_API_KEY
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://mosque-os-ai.vercel.app'
   const mosqueName = process.env.NEXT_PUBLIC_MOSQUE_NAME ?? 'Our Mosque'
+  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL
 
   if (RESEND_API_KEY && !RESEND_API_KEY.includes('REPLACE_ME') && RESEND_API_KEY.length > 10) {
-    try {
-      const voucherLinks = tokens
-        .map((t, i) => `<div style="margin:12px 0;padding:16px;background:#F0F7F3;border-radius:12px;border:1px solid #1A3D2B20;">
-          <p style="margin:0 0 4px;font-size:12px;color:#666;">Coupon ${i + 1} of ${order.quantity}</p>
-          <p style="margin:0;font-family:monospace;font-size:18px;font-weight:bold;color:#1A3D2B;letter-spacing:2px;">${t}</p>
-          <p style="margin:6px 0 0;font-size:12px;color:#888;">Valid at: ${order.merchant_name}</p>
-        </div>`)
-        .join('')
+    const from = process.env.RESEND_FROM_EMAIL ?? 'vouchers@imara.app'
 
+    // Notify admin to verify the payment in the bank
+    if (adminEmail) {
+      try {
+        await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            from,
+            to: adminEmail,
+            subject: `[Imara] New PayNow payment — ${order.reference} · ${formatCurrency(order.total, order.currency)}`,
+            html: `
+<div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:24px;">
+  <div style="background:#1A3D2B;border-radius:16px;padding:20px 24px;margin-bottom:20px;">
+    <p style="color:#C9A84C;font-size:16px;font-weight:bold;margin:0 0 4px;">Imara · ${mosqueName}</p>
+    <h1 style="color:white;margin:0;font-size:22px;">New payment to verify</h1>
+  </div>
+
+  <p style="color:#333;font-size:15px;">A buyer has submitted a PayNow payment. Please check your bank app for the transfer and verify below.</p>
+
+  <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;">
+    <tr><td style="padding:8px 0;color:#888;width:140px;">Reference</td><td style="padding:8px 0;font-family:monospace;font-weight:bold;font-size:16px;color:#1A3D2B;">${order.reference}</td></tr>
+    <tr><td style="padding:8px 0;color:#888;">Amount</td><td style="padding:8px 0;font-weight:bold;">${formatCurrency(order.total, order.currency)}</td></tr>
+    <tr><td style="padding:8px 0;color:#888;">Buyer</td><td style="padding:8px 0;">${order.buyer_name} (${order.buyer_email})</td></tr>
+    <tr><td style="padding:8px 0;color:#888;">Campaign</td><td style="padding:8px 0;">${order.campaign_name} × ${order.quantity}</td></tr>
+    <tr><td style="padding:8px 0;color:#888;">Merchant</td><td style="padding:8px 0;">${order.merchant_name}</td></tr>
+    <tr><td style="padding:8px 0;color:#888;">Mosque portion</td><td style="padding:8px 0;">${formatCurrency(order.mosque_portion, order.currency)}</td></tr>
+    <tr><td style="padding:8px 0;color:#888;">Merchant portion</td><td style="padding:8px 0;">${formatCurrency(order.merchant_portion, order.currency)}</td></tr>
+  </table>
+
+  <a href="${appUrl}/admin" style="display:inline-block;background:#1A3D2B;color:white;padding:12px 24px;border-radius:10px;text-decoration:none;font-weight:bold;font-size:14px;">
+    Go to Admin Panel →
+  </a>
+
+  <p style="margin-top:16px;font-size:12px;color:#aaa;">
+    Once you confirm the PayNow transfer matches <strong>${order.reference}</strong>, click "Verify payment" in the admin panel. The buyer's e-coupon will be sent automatically.
+  </p>
+</div>`,
+          }),
+        })
+      } catch (e) {
+        console.error('Admin notification email failed:', e)
+      }
+    }
+
+    // Acknowledge to buyer that payment is received and under review
+    try {
       await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          from: process.env.RESEND_FROM_EMAIL ?? 'vouchers@imara.app',
+          from,
           to: order.buyer_email,
-          subject: `Your ${order.campaign_name} voucher from ${mosqueName}`,
+          subject: `Payment received — ${order.campaign_name} (${order.reference})`,
           html: `
 <div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:24px;">
   <div style="background:#1A3D2B;border-radius:16px;padding:24px;text-align:center;margin-bottom:24px;">
     <p style="color:#C9A84C;font-size:20px;font-weight:bold;margin:0 0 8px;">Imara · ${mosqueName}</p>
-    <h1 style="color:white;margin:0;font-size:28px;">JazakAllah Khayran</h1>
-    <p style="color:rgba(255,255,255,0.7);margin:8px 0 0;font-size:14px;">Your voucher purchase supports the mosque</p>
+    <h1 style="color:white;margin:0;font-size:26px;">JazakAllah Khayran</h1>
+    <p style="color:rgba(255,255,255,0.7);margin:8px 0 0;font-size:14px;">We've received your payment</p>
   </div>
 
   <p style="color:#333;font-size:15px;">Assalamu Alaikum ${order.buyer_name},</p>
   <p style="color:#555;font-size:14px;line-height:1.6;">
-    Thank you for purchasing ${order.quantity} × <strong>${order.campaign_name}</strong> voucher${order.quantity > 1 ? 's' : ''} (${formatCurrency(order.unit_price, order.currency)} each).
-    Present the code below at <strong>${order.merchant_name}</strong> to redeem.
+    Thank you for purchasing <strong>${order.quantity} × ${order.campaign_name}</strong> (${formatCurrency(order.unit_price, order.currency)} each).
+    Your PayNow payment of <strong>${formatCurrency(order.total, order.currency)}</strong> has been received and is being verified by the mosque team.
   </p>
 
-  ${voucherLinks}
-
-  <div style="margin-top:20px;padding:16px;background:#FFF8EC;border-radius:12px;border-left:3px solid #C9A84C;">
-    <p style="margin:0;font-size:13px;color:#666;line-height:1.6;">
-      Your order reference: <strong>${order.reference}</strong><br/>
-      Payment will be verified by the mosque within 24 hours.<br/>
+  <div style="margin:20px 0;padding:16px;background:#FFF8EC;border-radius:12px;border-left:3px solid #C9A84C;">
+    <p style="margin:0;font-size:14px;color:#666;line-height:1.8;">
+      Order reference: <strong style="color:#1A3D2B;">${order.reference}</strong><br/>
+      Once verified (usually within a few hours), your e-coupon will be sent to this email automatically.<br/>
       Questions? Reply to this email.
     </p>
   </div>
@@ -112,9 +114,9 @@ export async function POST(
         }),
       })
     } catch (e) {
-      console.error('Email send failed:', e)
+      console.error('Buyer acknowledgment email failed:', e)
     }
   }
 
-  return NextResponse.json({ success: true, tokens })
+  return NextResponse.json({ success: true })
 }
