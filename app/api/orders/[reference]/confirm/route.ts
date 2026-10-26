@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getOrder, saveOrder } from '@/lib/order-store'
+import { getAdminNotificationEmail } from '@/lib/settings-store'
 
 function formatCurrency(amount: number, currency: string) {
   return new Intl.NumberFormat('en-SG', {
@@ -27,7 +28,7 @@ export async function POST(
   const RESEND_API_KEY = process.env.RESEND_API_KEY
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://mosque-os-ai.vercel.app'
   const mosqueName = process.env.NEXT_PUBLIC_MOSQUE_NAME ?? 'Our Mosque'
-  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL
+  const adminEmail = await getAdminNotificationEmail()
 
   if (RESEND_API_KEY && !RESEND_API_KEY.includes('REPLACE_ME') && RESEND_API_KEY.length > 10) {
     const from = process.env.RESEND_FROM_EMAIL ?? 'vouchers@imara.app'

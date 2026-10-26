@@ -46,6 +46,9 @@ export default async function AdminPage() {
             <a href="/admin/settlements" className="text-sm font-semibold text-[#1A3D2B] bg-[#1A3D2B]/10 px-4 py-2 rounded-xl hover:bg-[#1A3D2B]/20 transition-colors">
               Settlement →
             </a>
+            <a href="/admin/settings" className="text-sm font-semibold text-[#1A3D2B] bg-[#1A3D2B]/10 px-4 py-2 rounded-xl hover:bg-[#1A3D2B]/20 transition-colors">
+              Settings →
+            </a>
             <a href="/" className="text-sm text-[#1A3D2B] font-600 hover:underline">← Back to site</a>
             <AdminSignOut />
           </div>
