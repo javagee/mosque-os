@@ -58,7 +58,7 @@ export default function AdminOrderVerify({ order }: { order: Order }) {
           disabled={loading || done}
           className="px-4 py-2 rounded-xl bg-[#1A3D2B] text-white text-sm font-semibold hover:bg-[#2D6A4F] disabled:opacity-50 transition-colors whitespace-nowrap"
         >
-          {done ? '✓ Verified' : loading ? 'Verifying…' : 'Verify payment'}
+          {done ? '✓ Verified & Sent' : loading ? 'Sending coupon…' : 'Verify & Send E-Coupon'}
         </button>
       </div>
     </div>
