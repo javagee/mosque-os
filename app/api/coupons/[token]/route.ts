@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { getAdminNotificationEmail } from '@/lib/settings-store'
 
 export async function GET(
   _req: NextRequest,
@@ -36,6 +37,45 @@ export async function POST(
   const updated = await db.redeemCoupon(token, outlet ?? null)
   if (!updated) {
     return NextResponse.json({ error: 'Redemption failed — coupon may have already been used' }, { status: 409 })
+  }
+
+  // Notify admin that a coupon was redeemed
+  const RESEND_API_KEY = process.env.RESEND_API_KEY
+  if (RESEND_API_KEY && !RESEND_API_KEY.includes('REPLACE_ME') && RESEND_API_KEY.length > 10) {
+    const adminEmail = await getAdminNotificationEmail()
+    if (adminEmail) {
+      const mosqueName = process.env.NEXT_PUBLIC_MOSQUE_NAME ?? 'Our Mosque'
+      const campaign = coupon.campaign
+      const value = campaign
+        ? new Intl.NumberFormat('en-SG', { style: 'currency', currency: campaign.currency.toUpperCase(), minimumFractionDigits: 0 }).format(campaign.coupon_price / 100)
+        : '—'
+      fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from: process.env.RESEND_FROM_EMAIL ?? 'vouchers@imara.app',
+          to: adminEmail,
+          subject: `[Imara] Coupon redeemed · ${campaign?.merchant_name ?? 'Merchant'} · ${value}`,
+          html: `
+<div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:24px;">
+  <div style="background:#1A3D2B;border-radius:16px;padding:20px 24px;margin-bottom:20px;">
+    <p style="color:#C9A84C;font-size:16px;font-weight:bold;margin:0 0 4px;">Imara · ${mosqueName}</p>
+    <h1 style="color:white;margin:0;font-size:22px;">Coupon redeemed</h1>
+  </div>
+  <table style="width:100%;border-collapse:collapse;font-size:14px;">
+    <tr><td style="padding:8px 0;color:#888;width:140px;">Coupon token</td><td style="padding:8px 0;font-family:monospace;font-weight:bold;color:#1A3D2B;">${token}</td></tr>
+    <tr><td style="padding:8px 0;color:#888;">Campaign</td><td style="padding:8px 0;">${campaign?.name ?? '—'}</td></tr>
+    <tr><td style="padding:8px 0;color:#888;">Value</td><td style="padding:8px 0;font-weight:bold;">${value}</td></tr>
+    <tr><td style="padding:8px 0;color:#888;">Merchant</td><td style="padding:8px 0;">${campaign?.merchant_name ?? '—'}</td></tr>
+    ${outlet ? `<tr><td style="padding:8px 0;color:#888;">Outlet</td><td style="padding:8px 0;">${outlet}</td></tr>` : ''}
+    <tr><td style="padding:8px 0;color:#888;">Buyer</td><td style="padding:8px 0;">${coupon.buyer_name} (${coupon.buyer_email})</td></tr>
+    <tr><td style="padding:8px 0;color:#888;">Redeemed at</td><td style="padding:8px 0;">${new Date().toLocaleString('en-SG', { timeZone: 'Asia/Singapore', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td></tr>
+  </table>
+  <p style="margin-top:16px;font-size:12px;color:#aaa;">This coupon is now eligible for settlement. Go to /admin/settlements to process merchant payout.</p>
+</div>`,
+        }),
+      }).catch(e => console.error('Admin redemption notification failed:', e))
+    }
   }
 
   return NextResponse.json({ success: true, coupon: updated })
