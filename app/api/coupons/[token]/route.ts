@@ -40,23 +40,24 @@ export async function POST(
   }
 
   // Notify admin that a coupon was redeemed
-  const RESEND_API_KEY = process.env.RESEND_API_KEY
-  if (RESEND_API_KEY && !RESEND_API_KEY.includes('REPLACE_ME') && RESEND_API_KEY.length > 10) {
+  const BREVO_API_KEY = process.env.BREVO_API_KEY
+  if (BREVO_API_KEY && !BREVO_API_KEY.includes('REPLACE_ME') && BREVO_API_KEY.length > 10) {
     const adminEmail = await getAdminNotificationEmail()
     if (adminEmail) {
       const mosqueName = process.env.NEXT_PUBLIC_MOSQUE_NAME ?? 'Our Mosque'
+      const sender = { name: mosqueName, email: process.env.BREVO_FROM_EMAIL ?? 'saraghazsk@gmail.com' }
       const campaign = coupon.campaign
       const value = campaign
         ? new Intl.NumberFormat('en-SG', { style: 'currency', currency: campaign.currency.toUpperCase(), minimumFractionDigits: 0 }).format(campaign.coupon_price / 100)
         : '—'
-      fetch('https://api.resend.com/emails', {
+      fetch('https://api.brevo.com/v3/smtp/email', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+        headers: { 'api-key': BREVO_API_KEY, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          from: process.env.RESEND_FROM_EMAIL ?? 'vouchers@imara.app',
-          to: adminEmail,
+          sender,
+          to: [{ email: adminEmail }],
           subject: `[Imara] Coupon redeemed · ${campaign?.merchant_name ?? 'Merchant'} · ${value}`,
-          html: `
+          htmlContent: `
 <div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:24px;">
   <div style="background:#1A3D2B;border-radius:16px;padding:20px 24px;margin-bottom:20px;">
     <p style="color:#C9A84C;font-size:16px;font-weight:bold;margin:0 0 4px;">Imara · ${mosqueName}</p>

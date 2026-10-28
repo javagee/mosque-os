@@ -23,13 +23,14 @@ export async function POST(
     return NextResponse.json({ error: 'No coupon tokens found on this order. This order may have been verified before token tracking was added. Contact support.' }, { status: 404 })
   }
 
-  const RESEND_API_KEY = process.env.RESEND_API_KEY
-  if (!RESEND_API_KEY || RESEND_API_KEY.includes('REPLACE_ME') || RESEND_API_KEY.length <= 10) {
+  const BREVO_API_KEY = process.env.BREVO_API_KEY
+  if (!BREVO_API_KEY || BREVO_API_KEY.includes('REPLACE_ME') || BREVO_API_KEY.length <= 10) {
     return NextResponse.json({ error: 'Email not configured' }, { status: 500 })
   }
 
   const mosqueName = process.env.NEXT_PUBLIC_MOSQUE_NAME ?? 'Our Mosque'
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://mosque-os-ai.vercel.app'
+  const sender = { name: mosqueName, email: process.env.BREVO_FROM_EMAIL ?? 'saraghazsk@gmail.com' }
   const tokens = order.coupon_tokens
 
   const voucherLinks = tokens
@@ -44,14 +45,14 @@ export async function POST(
     </div>`)
     .join('')
 
-  const emailRes = await fetch('https://api.resend.com/emails', {
+  const emailRes = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
-    headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+    headers: { 'api-key': BREVO_API_KEY, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      from: process.env.RESEND_FROM_EMAIL ?? 'vouchers@imara.app',
-      to: order.buyer_email,
+      sender,
+      to: [{ email: order.buyer_email }],
       subject: `[Resent] Your ${order.campaign_name} e-coupon from ${mosqueName}`,
-      html: `
+      htmlContent: `
 <div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:24px;">
   <div style="background:#1A3D2B;border-radius:16px;padding:24px;text-align:center;margin-bottom:24px;">
     <p style="color:#C9A84C;font-size:20px;font-weight:bold;margin:0 0 8px;">Imara · ${mosqueName}</p>

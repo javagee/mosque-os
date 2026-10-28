@@ -21,25 +21,25 @@ export async function POST(
   const updated = { ...donation, status: 'pending_verification' as const, paid_at: new Date().toISOString() }
   await saveDonation(updated)
 
-  const RESEND_API_KEY = process.env.RESEND_API_KEY
+  const BREVO_API_KEY = process.env.BREVO_API_KEY
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://mosque-os-ai.vercel.app'
   const mosqueName = process.env.NEXT_PUBLIC_MOSQUE_NAME ?? 'Our Mosque'
   const adminEmail = await getAdminNotificationEmail()
 
-  if (RESEND_API_KEY && !RESEND_API_KEY.includes('REPLACE_ME') && RESEND_API_KEY.length > 10) {
-    const from = process.env.RESEND_FROM_EMAIL ?? 'donations@imara.app'
+  if (BREVO_API_KEY && !BREVO_API_KEY.includes('REPLACE_ME') && BREVO_API_KEY.length > 10) {
+    const sender = { name: mosqueName, email: process.env.BREVO_FROM_EMAIL ?? 'saraghazsk@gmail.com' }
 
     // Notify admin
     if (adminEmail) {
       try {
-        await fetch('https://api.resend.com/emails', {
+        await fetch('https://api.brevo.com/v3/smtp/email', {
           method: 'POST',
-          headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+          headers: { 'api-key': BREVO_API_KEY, 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            from,
-            to: adminEmail,
+            sender,
+            to: [{ email: adminEmail }],
             subject: `[Imara] New donation — ${donation.reference} · ${sgd(donation.amount)}`,
-            html: `
+            htmlContent: `
 <div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:24px;">
   <div style="background:#1A3D2B;border-radius:16px;padding:20px 24px;margin-bottom:20px;">
     <p style="color:#C9A84C;font-size:16px;font-weight:bold;margin:0 0 4px;">Imara · ${mosqueName}</p>
@@ -66,14 +66,14 @@ export async function POST(
 
     // Acknowledge donor
     try {
-      const donorAckRes = await fetch('https://api.resend.com/emails', {
+      const donorAckRes = await fetch('https://api.brevo.com/v3/smtp/email', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+        headers: { 'api-key': BREVO_API_KEY, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          from,
-          to: donation.donor_email,
+          sender,
+          to: [{ email: donation.donor_email }],
           subject: `Donation received — ${donation.reference}`,
-          html: `
+          htmlContent: `
 <div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:24px;">
   <div style="background:#1A3D2B;border-radius:16px;padding:24px;text-align:center;margin-bottom:24px;">
     <p style="color:#C9A84C;font-size:20px;font-weight:bold;margin:0 0 8px;">Imara · ${mosqueName}</p>

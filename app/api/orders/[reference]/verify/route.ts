@@ -60,12 +60,13 @@ export async function POST(
   await saveOrder(updated)
 
   // Send voucher email to buyer
-  const RESEND_API_KEY = process.env.RESEND_API_KEY
+  const BREVO_API_KEY = process.env.BREVO_API_KEY
   const mosqueName = process.env.NEXT_PUBLIC_MOSQUE_NAME ?? 'Our Mosque'
 
-  if (RESEND_API_KEY && !RESEND_API_KEY.includes('REPLACE_ME') && RESEND_API_KEY.length > 10) {
+  if (BREVO_API_KEY && !BREVO_API_KEY.includes('REPLACE_ME') && BREVO_API_KEY.length > 10) {
     try {
       const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://mosque-os-ai.vercel.app'
+      const sender = { name: mosqueName, email: process.env.BREVO_FROM_EMAIL ?? 'saraghazsk@gmail.com' }
       const voucherLinks = tokens
         .map((t, i) => `<div style="margin:12px 0;padding:16px;background:#F0F7F3;border-radius:12px;border:1px solid #1A3D2B20;">
           <p style="margin:0 0 4px;font-size:12px;color:#666;">Coupon ${i + 1} of ${order.quantity}</p>
@@ -78,14 +79,14 @@ export async function POST(
         </div>`)
         .join('')
 
-      const emailRes = await fetch('https://api.resend.com/emails', {
+      const emailRes = await fetch('https://api.brevo.com/v3/smtp/email', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+        headers: { 'api-key': BREVO_API_KEY, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          from: process.env.RESEND_FROM_EMAIL ?? 'vouchers@imara.app',
-          to: order.buyer_email,
+          sender,
+          to: [{ email: order.buyer_email }],
           subject: `Your ${order.campaign_name} e-coupon from ${mosqueName}`,
-          html: `
+          htmlContent: `
 <div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:24px;">
   <div style="background:#1A3D2B;border-radius:16px;padding:24px;text-align:center;margin-bottom:24px;">
     <p style="color:#C9A84C;font-size:20px;font-weight:bold;margin:0 0 8px;">Imara · ${mosqueName}</p>
