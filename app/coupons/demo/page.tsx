@@ -14,6 +14,7 @@ const DEMO_COUPON = {
     merchant_name: 'Warung Al-Barakah',
     coupon_price: 1200,
     currency: 'sgd',
+    image_url: '/images/nasi-lemak-family-set.jpg',
     redemption_start: new Date().toISOString(),
     redemption_end: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
   },
