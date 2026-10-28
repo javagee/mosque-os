@@ -77,10 +77,10 @@ export default function AdminSidebarLayout({
   }
 
   return (
-    <div className="min-h-screen flex bg-[#F0F4F3]">
+    <div className="flex bg-[#F0F4F3]">
 
       {/* Sidebar */}
-      <aside className="w-56 flex-shrink-0 bg-[#1A3D2B] flex flex-col fixed h-full z-30">
+      <aside className="w-56 flex-shrink-0 bg-[#1A3D2B] flex flex-col sticky top-0 h-screen self-start z-30">
 
         {/* Logo */}
         <div className="px-5 py-5 border-b border-white/10">
@@ -151,7 +151,7 @@ export default function AdminSidebarLayout({
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 ml-56 min-h-screen">
+      <main className="flex-1 min-h-screen">
         {children}
       </main>
     </div>

@@ -9,25 +9,6 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-[#F7F6F2]">
 
-      {/* Demo persona switcher — thin bar above nav */}
-      <div className="bg-[#111C16] border-b border-white/5 px-6 py-1.5">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <span className="text-[10px] text-green-400/40 font-semibold tracking-widest">DEMO</span>
-          <div className="flex items-center gap-4 text-xs">
-            <span className="text-green-400/40">Switch persona:</span>
-            <Link href="/campaigns" className="text-green-300/60 hover:text-[#C9A84C] transition-colors font-semibold">
-              👤 Buyer
-            </Link>
-            <Link href="/merchant/login" className="text-green-300/60 hover:text-[#C9A84C] transition-colors font-semibold">
-              🏪 Merchant
-            </Link>
-            <Link href="/admin/login" className="text-green-300/60 hover:text-[#C9A84C] transition-colors font-semibold">
-              🛡 Admin
-            </Link>
-          </div>
-        </div>
-      </div>
-
       {/* Nav */}
       <nav className="bg-[#1A3D2B] sticky top-0 z-40">
         <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
