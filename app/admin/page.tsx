@@ -40,6 +40,9 @@ export default async function AdminPage() {
             <p className="text-sm text-gray-400 mt-1">Imara · Donation overview</p>
           </div>
           <div className="flex items-center gap-3">
+            <a href="/admin/finance" className="text-sm font-semibold text-white bg-[#1A3D2B] px-4 py-2 rounded-xl hover:bg-[#2D6A4F] transition-colors">
+              Finance →
+            </a>
             <a href="/admin/campaigns" className="text-sm font-semibold text-[#1A3D2B] bg-[#1A3D2B]/10 px-4 py-2 rounded-xl hover:bg-[#1A3D2B]/20 transition-colors">
               Campaigns →
             </a>
