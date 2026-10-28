@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { DONATION_CATEGORIES, PRESET_AMOUNTS, type DonationCategory, type DonationType } from '@/types'
 
 export default function DonationForm() {
@@ -12,6 +12,8 @@ export default function DonationForm() {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const nameRef = useRef<HTMLInputElement>(null)
+  const emailRef = useRef<HTMLInputElement>(null)
 
   const finalAmount = customAmount ? parseFloat(customAmount) : amount
 
@@ -21,6 +23,11 @@ export default function DonationForm() {
     if (!email.trim() || !email.includes('@')) e.email = 'Please enter a valid email'
     if (!finalAmount || finalAmount < 1) e.amount = 'Minimum donation is S$1'
     setErrors(e)
+    if (Object.keys(e).length > 0) {
+      const firstRef = e.name ? nameRef : e.email ? emailRef : null
+      firstRef?.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      firstRef?.current?.focus()
+    }
     return Object.keys(e).length === 0
   }
 
@@ -71,6 +78,7 @@ export default function DonationForm() {
         <div className="grid grid-cols-2 gap-3">
           <div>
             <input
+              ref={nameRef}
               type="text"
               placeholder="Your name"
               value={name}
@@ -83,6 +91,7 @@ export default function DonationForm() {
           </div>
           <div>
             <input
+              ref={emailRef}
               type="email"
               placeholder="Email address"
               value={email}
