@@ -44,16 +44,16 @@ export default async function AdminPage() {
 
   return (
     <AdminSidebarLayout mosqueName={mosqueName}>
-      <div className="p-6 space-y-6">
+      <div className="p-4 md:p-6 space-y-4 md:space-y-6">
 
         {/* Page header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-[#C9A84C] text-xs font-semibold tracking-widest mb-0.5">IMAM ADMINISTRATION</p>
-            <h1 className="text-2xl font-bold text-[#1A3D2B]">{mosqueName}</h1>
-            <p className="text-sm text-gray-400 mt-0.5">Overview · {new Date().toLocaleDateString('en-SG', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+            <h1 className="text-xl md:text-2xl font-bold text-[#1A3D2B]">{mosqueName}</h1>
+            <p className="text-xs md:text-sm text-gray-400 mt-0.5">Overview · {new Date().toLocaleDateString('en-SG', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             {pendingCount > 0 && (
               <span className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-200 text-amber-700 text-xs font-semibold rounded-full">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
