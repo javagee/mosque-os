@@ -2,11 +2,38 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getAdminNotificationEmail } from '@/lib/settings-store'
 
+// Hardcoded demo coupon returned for any DEMO-* token (no DB read)
+const DEMO_COUPON_RESPONSE = {
+  id: 'demo',
+  token: 'DEMO-SMPL-0001',
+  serial_number: 'IMA-DEMO01-01',
+  campaign_id: 'demo',
+  buyer_name: 'Ahmad bin Abdullah',
+  buyer_email: 'ahmad@example.com',
+  stripe_session_id: 'demo',
+  status: 'active' as const,
+  created_at: new Date().toISOString(),
+  campaign: {
+    id: 'demo',
+    name: 'Nasi Lemak Deluxe Set',
+    merchant_name: 'Warung Al-Barakah',
+    coupon_price: 1200,
+    currency: 'sgd',
+    coupons_sold: 0,
+    active: true,
+    created_at: new Date().toISOString(),
+    redemption_start: new Date().toISOString(),
+    redemption_end: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
+    image_url: '/images/nasi-lemak-family-set.jpg',
+  },
+}
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ token: string }> }
 ) {
   const { token } = await params
+  if (token.startsWith('DEMO-')) return NextResponse.json(DEMO_COUPON_RESPONSE)
   const coupon = await db.getCouponByToken(token)
   if (!coupon) return NextResponse.json({ error: 'Coupon not found' }, { status: 404 })
   return NextResponse.json(coupon)
@@ -18,6 +45,13 @@ export async function POST(
 ) {
   const { token } = await params
   const { outlet } = await req.json().catch(() => ({ outlet: null }))
+
+  if (token.startsWith('DEMO-')) {
+    return NextResponse.json({
+      success: true,
+      coupon: { ...DEMO_COUPON_RESPONSE, status: 'redeemed' as const, redeemed_at: new Date().toISOString() },
+    })
+  }
 
   const coupon = await db.getCouponByToken(token)
   if (!coupon) return NextResponse.json({ error: 'Coupon not found' }, { status: 404 })

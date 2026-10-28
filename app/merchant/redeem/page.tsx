@@ -31,27 +31,8 @@ function QrScanner({ onScan }: { onScan: (token: string) => void }) {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
       streamRef.current = stream
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream
-        await videoRef.current.play()
-      }
       setActive(true)
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const detector = new (window as any).BarcodeDetector({ formats: ['qr_code'] })
-      const scan = async () => {
-        if (!videoRef.current || !streamRef.current) return
-        try {
-          const codes = await detector.detect(videoRef.current)
-          if (codes.length > 0) {
-            stopScanner()
-            onScan(codes[0].rawValue as string)
-            return
-          }
-        } catch { /* ignore */ }
-        scanLoopRef.current = setTimeout(scan, 400)
-      }
-      scanLoopRef.current = setTimeout(scan, 800)
+      // srcObject is set in the useEffect below once the video element is in the DOM
     } catch (err: unknown) {
       if (err instanceof DOMException && err.name === 'NotAllowedError') {
         setDenied(true)
@@ -59,7 +40,31 @@ function QrScanner({ onScan }: { onScan: (token: string) => void }) {
         setUnsupported(true)
       }
     }
-  }, [onScan, stopScanner])
+  }, [])
+
+  // Wire the stream to the video element after it mounts (active = true triggers the render)
+  useEffect(() => {
+    if (!active || !videoRef.current || !streamRef.current) return
+    const video = videoRef.current
+    video.srcObject = streamRef.current
+    video.play().catch(() => {})
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const detector = new (window as any).BarcodeDetector({ formats: ['qr_code'] })
+    const scan = async () => {
+      if (!videoRef.current || !streamRef.current) return
+      try {
+        const codes = await detector.detect(videoRef.current)
+        if (codes.length > 0) {
+          stopScanner()
+          onScan(codes[0].rawValue as string)
+          return
+        }
+      } catch { /* ignore */ }
+      scanLoopRef.current = setTimeout(scan, 400)
+    }
+    scanLoopRef.current = setTimeout(scan, 800)
+  }, [active, onScan, stopScanner])
 
   useEffect(() => () => stopScanner(), [stopScanner])
 
