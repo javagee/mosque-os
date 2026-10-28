@@ -86,7 +86,7 @@ function QrScanner({ onScan }: { onScan: (token: string) => void }) {
         </div>
       ) : (
         <div className="relative rounded-2xl overflow-hidden bg-black">
-          <video ref={videoRef} className="w-full h-52 object-cover" playsInline muted />
+          <video ref={videoRef} className="w-full h-52 object-cover" playsInline autoPlay muted />
           {/* Scan frame overlay */}
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="w-36 h-36 border-2 border-[#C9A84C] rounded-xl opacity-80" />
