@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import type { Campaign } from '@/types'
 import type { CampaignInsertData } from '@/lib/db/types'
+import AdminSidebarLayout from '@/components/admin/AdminSidebarLayout'
 
 const EMPTY_FORM: CampaignInsertData = {
   name: '',
@@ -178,7 +179,7 @@ function CampaignForm({
   )
 }
 
-export default function CampaignsAdmin({ initialCampaigns }: { initialCampaigns: Campaign[] }) {
+export default function CampaignsAdmin({ initialCampaigns, mosqueName }: { initialCampaigns: Campaign[]; mosqueName: string }) {
   const [campaigns, setCampaigns] = useState<Campaign[]>(initialCampaigns)
   const [panel, setPanel] = useState<'closed' | 'new' | { id: string }>('closed')
   const [toggling, setToggling] = useState<string | null>(null)
@@ -241,24 +242,22 @@ export default function CampaignsAdmin({ initialCampaigns }: { initialCampaigns:
     : EMPTY_FORM
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA]">
-      <div className="max-w-5xl mx-auto px-6 py-8 space-y-6">
+    <AdminSidebarLayout mosqueName={mosqueName}>
+      <div className="p-6 space-y-6">
 
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-[#1A3D2B]">Campaigns</h1>
+            <p className="text-[#C9A84C] text-xs font-semibold tracking-widest mb-0.5">CAMPAIGNS</p>
+            <h1 className="text-2xl font-bold text-[#1A3D2B]">{mosqueName}</h1>
             <p className="text-sm text-gray-400 mt-0.5">{campaigns.length} campaign{campaigns.length !== 1 ? 's' : ''} total</p>
           </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setPanel('new')}
-              className="px-4 py-2 bg-[#1A3D2B] text-white text-sm font-semibold rounded-xl hover:bg-[#2D6A4F] transition-colors"
-            >
-              + New campaign
-            </button>
-            <a href="/admin" className="text-sm text-[#1A3D2B] font-semibold hover:underline">← Admin</a>
-          </div>
+          <button
+            onClick={() => setPanel('new')}
+            className="px-4 py-2 bg-[#1A3D2B] text-white text-sm font-semibold rounded-xl hover:bg-[#2D6A4F] transition-colors"
+          >
+            + New campaign
+          </button>
         </div>
 
         {/* Create / Edit panel */}
@@ -363,6 +362,6 @@ export default function CampaignsAdmin({ initialCampaigns }: { initialCampaigns:
           </div>
         )}
       </div>
-    </div>
+    </AdminSidebarLayout>
   )
 }

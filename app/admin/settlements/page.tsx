@@ -1,5 +1,5 @@
-import Link from 'next/link'
 import { db } from '@/lib/db'
+import AdminSidebarLayout from '@/components/admin/AdminSidebarLayout'
 import SettlementMerchant from '@/components/admin/SettlementMerchant'
 import type { Coupon } from '@/types'
 
@@ -26,6 +26,7 @@ export default async function SettlementsPage() {
   const mosqueName = process.env.NEXT_PUBLIC_MOSQUE_NAME ?? 'Our Mosque'
   const byMerchant = groupByMerchant(redeemedCoupons)
 
+
   const currency = redeemedCoupons[0]?.campaign?.currency ?? 'sgd'
 
   const pendingCoupons = redeemedCoupons.filter(c => !c.merchant_settled)
@@ -41,20 +42,16 @@ export default async function SettlementsPage() {
   const pendingMerchantCount = Object.values(byMerchant).filter(m => m.pending.length > 0).length
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA]">
-      <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
+    <AdminSidebarLayout mosqueName={mosqueName}>
+      <div className="p-6 space-y-6">
 
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-[#1A3D2B]">Settlement Report</h1>
-            <p className="text-sm text-gray-400 mt-0.5">
-              {mosqueName} · Based on redeemed vouchers
-            </p>
-          </div>
-          <Link href="/admin" className="text-sm text-[#1A3D2B] font-semibold hover:underline">
-            ← Back to admin
-          </Link>
+        <div>
+          <p className="text-[#C9A84C] text-xs font-semibold tracking-widest mb-0.5">SETTLEMENT</p>
+          <h1 className="text-2xl font-bold text-[#1A3D2B]">{mosqueName}</h1>
+          <p className="text-sm text-gray-400 mt-0.5">
+            Merchant payouts · based on redeemed vouchers
+          </p>
         </div>
 
         {redeemedCoupons.length === 0 ? (
@@ -186,6 +183,6 @@ export default async function SettlementsPage() {
           </>
         )}
       </div>
-    </div>
+    </AdminSidebarLayout>
   )
 }

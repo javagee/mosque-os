@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
   PieChart, Pie, Cell,
@@ -130,16 +131,21 @@ export function SettlementPipeline({ collected, settled, pending }: { collected:
   return (
     <div className="flex items-center justify-between gap-2">
       {[
-        { label: 'Collected',  value: collected, sub: 'from all sales', color: 'text-[#1A3D2B]',  bg: 'bg-[#E8F0EC]' },
-        { label: 'Settled',    value: settled,   sub: 'to mosque',       color: 'text-[#2D6A4F]',  bg: 'bg-[#F0F7F3]' },
-        { label: 'Pending',    value: pending,   sub: 'awaiting payout', color: 'text-red-600',    bg: 'bg-red-50' },
+        { label: 'Collected',  value: collected, sub: 'from all sales', color: 'text-[#1A3D2B]',  bg: 'bg-[#E8F0EC]', link: null },
+        { label: 'Settled',    value: settled,   sub: 'to mosque',       color: 'text-[#2D6A4F]',  bg: 'bg-[#F0F7F3]', link: null },
+        { label: 'Pending',    value: pending,   sub: 'awaiting payout', color: 'text-red-600',    bg: 'bg-red-50',    link: '/admin/settlements' },
       ].map((s, i) => (
         <div key={s.label} className="flex items-center gap-2 flex-1">
           {i > 0 && <Arrow />}
-          <div className={`${s.bg} rounded-xl px-4 py-3 flex-1 text-center`}>
+          <div className={`${s.bg} rounded-xl px-4 py-3 flex-1 text-center relative`}>
             <p className={`text-lg font-800 ${s.color}`}>{sgd(s.value)}</p>
             <p className="text-xs font-600 text-gray-600 mt-0.5">{s.label}</p>
             <p className="text-xs text-gray-400">{s.sub}</p>
+            {s.link && s.value > 0 && (
+              <Link href={s.link} className="mt-1.5 inline-block text-xs font-semibold text-red-600 hover:text-red-700 underline underline-offset-2">
+                Settle now →
+              </Link>
+            )}
           </div>
         </div>
       ))}
