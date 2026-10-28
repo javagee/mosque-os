@@ -219,7 +219,7 @@ function LoginForm() {
 
 export default function MerchantLoginPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#FAFAFA]" />}>
+    <Suspense fallback={<div className="min-h-screen bg-[#1A3D2B]" />}>
       <LoginForm />
     </Suspense>
   )
