@@ -62,14 +62,15 @@ export default async function DonationSuccessPage({
             <p className="text-xs text-amber-600 mb-2">Your order reference</p>
             <p className="font-mono text-xl font-bold text-[#1A3D2B] tracking-widest">{ref}</p>
             <p className="text-xs text-gray-500 mt-2 leading-relaxed">
-              Screenshot this reference. Once the mosque team confirms your PayNow transfer, your e-coupon will be emailed to you automatically.
+              Save this reference. Once the mosque team confirms your PayNow transfer, your e-coupon will be emailed to you automatically.
             </p>
             <Link
               href={`/orders/${ref}`}
-              className="inline-flex items-center gap-1.5 mt-3 text-xs font-semibold text-[#1A3D2B] hover:underline"
+              className="mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#1A3D2B] text-white text-sm font-bold hover:bg-[#2D6A4F] transition-colors"
             >
               Check order status →
             </Link>
+            <p className="text-xs text-gray-400 text-center mt-2">Bookmark that page to check back later</p>
           </div>
         )}
 

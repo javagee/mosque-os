@@ -14,6 +14,7 @@ function QrScanner({ onScan }: { onScan: (token: string) => void }) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [active, setActive] = useState(false)
   const [unsupported, setUnsupported] = useState(false)
+  const [denied, setDenied] = useState(false)
   const scanLoopRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
 
@@ -26,6 +27,7 @@ function QrScanner({ onScan }: { onScan: (token: string) => void }) {
 
   const startScanner = useCallback(async () => {
     if (!('BarcodeDetector' in window)) { setUnsupported(true); return }
+    setDenied(false)
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
       streamRef.current = stream
@@ -50,8 +52,12 @@ function QrScanner({ onScan }: { onScan: (token: string) => void }) {
         scanLoopRef.current = setTimeout(scan, 400)
       }
       scanLoopRef.current = setTimeout(scan, 800)
-    } catch {
-      setUnsupported(true)
+    } catch (err: unknown) {
+      if (err instanceof DOMException && err.name === 'NotAllowedError') {
+        setDenied(true)
+      } else {
+        setUnsupported(true)
+      }
     }
   }, [onScan, stopScanner])
 
@@ -62,15 +68,22 @@ function QrScanner({ onScan }: { onScan: (token: string) => void }) {
   return (
     <div className="mb-4">
       {!active ? (
-        <button
-          onClick={startScanner}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-[#1A3D2B]/30 text-[#1A3D2B] text-sm font-semibold hover:border-[#1A3D2B]/60 hover:bg-[#1A3D2B]/5 transition-colors"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-          </svg>
-          Scan QR Code
-        </button>
+        <div className="space-y-2">
+          <button
+            onClick={startScanner}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-[#1A3D2B]/30 text-[#1A3D2B] text-sm font-semibold hover:border-[#1A3D2B]/60 hover:bg-[#1A3D2B]/5 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+            </svg>
+            Scan QR Code
+          </button>
+          {denied && (
+            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-center">
+              Camera access was denied. Enable it in your browser settings and try again, or enter the token manually below.
+            </p>
+          )}
+        </div>
       ) : (
         <div className="relative rounded-2xl overflow-hidden bg-black">
           <video ref={videoRef} className="w-full h-52 object-cover" playsInline muted />
