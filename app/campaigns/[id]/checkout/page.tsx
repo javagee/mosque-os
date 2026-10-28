@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -28,6 +28,8 @@ export default function CheckoutPage() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [errors, setErrors] = useState<{ name?: string; email?: string }>({})
+  const nameRef = useRef<HTMLInputElement>(null)
+  const emailRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     fetch(`/api/campaigns/${id}`)
@@ -41,6 +43,11 @@ export default function CheckoutPage() {
     if (!name.trim()) e.name = 'Please enter your name'
     if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = 'Please enter a valid email'
     setErrors(e)
+    if (Object.keys(e).length > 0) {
+      const firstRef = e.name ? nameRef : emailRef
+      firstRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      firstRef.current?.focus()
+    }
     return Object.keys(e).length === 0
   }
 
@@ -157,6 +164,7 @@ export default function CheckoutPage() {
             <div>
               <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Full name</label>
               <input
+                ref={nameRef}
                 value={name}
                 onChange={e => { setName(e.target.value); setErrors(p => ({ ...p, name: undefined })) }}
                 placeholder="Ahmad bin Abdullah"
@@ -168,6 +176,7 @@ export default function CheckoutPage() {
             <div>
               <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Email address</label>
               <input
+                ref={emailRef}
                 type="email"
                 value={email}
                 onChange={e => { setEmail(e.target.value); setErrors(p => ({ ...p, email: undefined })) }}
