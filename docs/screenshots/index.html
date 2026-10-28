@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Imara Demo — Screenshot Gallery</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0 }
+  body { font-family: -apple-system, sans-serif; background: #F0F4F3; color: #1A3D2B }
+  header { background: #1A3D2B; color: white; padding: 28px 40px }
+  header h1 { font-size: 24px; font-weight: 700 }
+  header p { color: rgba(255,255,255,0.6); margin-top: 4px; font-size: 14px }
+  main { max-width: 1400px; margin: 0 auto; padding: 40px 32px }
+  section { margin-bottom: 48px }
+  h2 { font-size: 18px; font-weight: 700; margin-bottom: 16px; padding-bottom: 8px;
+       border-bottom: 2px solid #1A3D2B20 }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px }
+  .card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.08);
+          cursor: pointer; transition: transform .15s, box-shadow .15s }
+  .card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,.12) }
+  .card img { width: 100%; display: block; border-bottom: 1px solid #f0f0f0 }
+  .card p { padding: 10px 14px; font-size: 13px; font-weight: 600; color: #444 }
+  .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.8);
+           z-index:100; align-items:center; justify-content:center; flex-direction:column }
+  .modal.open { display:flex }
+  .modal img { max-width:90vw; max-height:82vh; border-radius:8px; box-shadow:0 8px 40px rgba(0,0,0,.4) }
+  .modal p { color:white; margin-top:14px; font-size:15px; font-weight:600 }
+  .modal-close { position:fixed; top:20px; right:28px; color:white; font-size:28px; cursor:pointer;
+                 background:rgba(255,255,255,.1); border:none; border-radius:50%;
+                 width:40px; height:40px; display:flex; align-items:center; justify-content:center }
+</style>
+</head>
+<body>
+<header>
+  <h1>Imara — Demo Presentation Gallery</h1>
+  <p>mosque-os-ai.vercel.app · 23 screens captured · 28 October 2026</p>
+</header>
+<main>
+    <section>
+      <h2>👤 Buyer Flow</h2>
+      <div class="grid">
+    <div class="card">
+      <img src="01-buyer-homepage.png" alt="Homepage" onclick="openModal('01-buyer-homepage.png','Homepage')" />
+      <p>Homepage</p>
+    </div>
+    <div class="card">
+      <img src="02-buyer-campaigns.png" alt="Campaigns list" onclick="openModal('02-buyer-campaigns.png','Campaigns list')" />
+      <p>Campaigns list</p>
+    </div>
+    <div class="card">
+      <img src="03-buyer-campaign-detail.png" alt="Campaign detail" onclick="openModal('03-buyer-campaign-detail.png','Campaign detail')" />
+      <p>Campaign detail</p>
+    </div>
+    <div class="card">
+      <img src="04-buyer-checkout.png" alt="Checkout form" onclick="openModal('04-buyer-checkout.png','Checkout form')" />
+      <p>Checkout form</p>
+    </div>
+    <div class="card">
+      <img src="05-buyer-paynow.png" alt="PayNow payment page" onclick="openModal('05-buyer-paynow.png','PayNow payment page')" />
+      <p>PayNow payment page</p>
+    </div>
+    <div class="card">
+      <img src="06-buyer-success.png" alt="Payment success" onclick="openModal('06-buyer-success.png','Payment success')" />
+      <p>Payment success</p>
+    </div>
+    <div class="card">
+      <img src="07-buyer-track-order.png" alt="Track Order (empty)" onclick="openModal('07-buyer-track-order.png','Track Order (empty)')" />
+      <p>Track Order (empty)</p>
+    </div>
+    <div class="card">
+      <img src="07b-buyer-track-order-filled.png" alt="Track Order (filled)" onclick="openModal('07b-buyer-track-order-filled.png','Track Order (filled)')" />
+      <p>Track Order (filled)</p>
+    </div></div>
+    </section>
+    <section>
+      <h2>Other</h2>
+      <div class="grid">
+    <div class="card">
+      <img src="07c-buyer-order-status.png" alt="07c-buyer-order-status" onclick="openModal('07c-buyer-order-status.png','07c-buyer-order-status')" />
+      <p>07c-buyer-order-status</p>
+    </div></div>
+    </section>
+    <section>
+      <h2>🛡 Admin Flow</h2>
+      <div class="grid">
+    <div class="card">
+      <img src="10-admin-login.png" alt="Admin login" onclick="openModal('10-admin-login.png','Admin login')" />
+      <p>Admin login</p>
+    </div>
+    <div class="card">
+      <img src="10b-admin-login-filled.png" alt="Admin login (credentials)" onclick="openModal('10b-admin-login-filled.png','Admin login (credentials)')" />
+      <p>Admin login (credentials)</p>
+    </div>
+    <div class="card">
+      <img src="11-admin-dashboard.png" alt="Dashboard (pending panel)" onclick="openModal('11-admin-dashboard.png','Dashboard (pending panel)')" />
+      <p>Dashboard (pending panel)</p>
+    </div>
+    <div class="card">
+      <img src="12-admin-finance.png" alt="Finance & Donations" onclick="openModal('12-admin-finance.png','Finance & Donations')" />
+      <p>Finance & Donations</p>
+    </div>
+    <div class="card">
+      <img src="13-admin-settlements.png" alt="Settlements" onclick="openModal('13-admin-settlements.png','Settlements')" />
+      <p>Settlements</p>
+    </div>
+    <div class="card">
+      <img src="14-admin-campaigns.png" alt="Campaigns management" onclick="openModal('14-admin-campaigns.png','Campaigns management')" />
+      <p>Campaigns management</p>
+    </div>
+    <div class="card">
+      <img src="15-admin-settings.png" alt="Settings" onclick="openModal('15-admin-settings.png','Settings')" />
+      <p>Settings</p>
+    </div></div>
+    </section>
+    <section>
+      <h2>🏪 Merchant Flow</h2>
+      <div class="grid">
+    <div class="card">
+      <img src="20-merchant-login.png" alt="Merchant login (PIN)" onclick="openModal('20-merchant-login.png','Merchant login (PIN)')" />
+      <p>Merchant login (PIN)</p>
+    </div>
+    <div class="card">
+      <img src="21-merchant-redeem.png" alt="Redeem voucher" onclick="openModal('21-merchant-redeem.png','Redeem voucher')" />
+      <p>Redeem voucher</p>
+    </div>
+    <div class="card">
+      <img src="21b-merchant-redeem-token-entered.png" alt="Redeem (token entered)" onclick="openModal('21b-merchant-redeem-token-entered.png','Redeem (token entered)')" />
+      <p>Redeem (token entered)</p>
+    </div>
+    <div class="card">
+      <img src="22-merchant-history.png" alt="History & KPIs" onclick="openModal('22-merchant-history.png','History & KPIs')" />
+      <p>History & KPIs</p>
+    </div></div>
+    </section>
+    <section>
+      <h2>📱 Mobile View</h2>
+      <div class="grid">
+    <div class="card">
+      <img src="30-mobile-homepage.png" alt="Homepage (mobile)" onclick="openModal('30-mobile-homepage.png','Homepage (mobile)')" />
+      <p>Homepage (mobile)</p>
+    </div>
+    <div class="card">
+      <img src="31-mobile-campaigns.png" alt="Campaigns (mobile)" onclick="openModal('31-mobile-campaigns.png','Campaigns (mobile)')" />
+      <p>Campaigns (mobile)</p>
+    </div>
+    <div class="card">
+      <img src="32-mobile-track-order.png" alt="Track Order (mobile)" onclick="openModal('32-mobile-track-order.png','Track Order (mobile)')" />
+      <p>Track Order (mobile)</p>
+    </div></div>
+    </section></main>
+<div class="modal" id="modal" onclick="closeModal()">
+  <button class="modal-close" onclick="closeModal()">✕</button>
+  <img id="modal-img" src="" alt="" />
+  <p id="modal-label"></p>
+</div>
+<script>
+  function openModal(src, label) {
+    document.getElementById('modal-img').src = src
+    document.getElementById('modal-label').textContent = label
+    document.getElementById('modal').classList.add('open')
+  }
+  function closeModal() { document.getElementById('modal').classList.remove('open') }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal() })
+</script>
+</body>
+</html>
