@@ -163,7 +163,7 @@ export default function HomePage() {
             <Link href="/donate" className="hover:text-green-300 transition-colors">Donate</Link>
             <Link href="/campaigns" className="hover:text-green-300 transition-colors">Campaigns</Link>
             <Link href="/display" className="hover:text-green-300 transition-colors">Prayer Times</Link>
-            <Link href="/admin" className="hover:text-green-300 transition-colors">Admin</Link>
+            <Link href="/admin/login" className="hover:text-green-300 transition-colors">Admin</Link>
           </div>
           <p className="text-xs text-green-400/30">PayNow · Zero fees · Built with Imara</p>
         </div>
