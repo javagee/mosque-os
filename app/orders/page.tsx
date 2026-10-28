@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Nav from '@/components/layout/Nav'
 
@@ -12,11 +12,23 @@ export default function OrderLookupPage() {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const referenceRef = useRef<HTMLInputElement>(null)
+  const emailRef = useRef<HTMLInputElement>(null)
+  const errorRef = useRef<HTMLDivElement>(null)
 
   async function handleLookup(e: React.FormEvent) {
     e.preventDefault()
     setError('')
-    if (!reference.trim() || !email.trim()) { setError('Please enter both your order reference and email.'); return }
+    if (!reference.trim()) {
+      referenceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      referenceRef.current?.focus()
+      return
+    }
+    if (!email.trim()) {
+      emailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      emailRef.current?.focus()
+      return
+    }
     setLoading(true)
     try {
       const res = await fetch('/api/orders/lookup', {
@@ -25,11 +37,17 @@ export default function OrderLookupPage() {
         body: JSON.stringify({ reference: reference.trim(), email: email.trim() }),
       })
       const data = await res.json()
-      if (!res.ok) { setError(data.error ?? 'Order not found'); setLoading(false); return }
+      if (!res.ok) {
+        setError(data.error ?? 'Order not found')
+        setLoading(false)
+        setTimeout(() => errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50)
+        return
+      }
       router.push(`/orders/${data.reference}`)
     } catch {
       setError('Something went wrong. Please try again.')
       setLoading(false)
+      setTimeout(() => errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50)
     }
   }
 
@@ -61,6 +79,7 @@ export default function OrderLookupPage() {
               Order Reference
             </label>
             <input
+              ref={referenceRef}
               type="text"
               value={reference}
               onChange={e => { setReference(e.target.value.toUpperCase()); setError('') }}
@@ -76,6 +95,7 @@ export default function OrderLookupPage() {
               Email address
             </label>
             <input
+              ref={emailRef}
               type="email"
               value={email}
               onChange={e => { setEmail(e.target.value); setError('') }}
@@ -87,7 +107,7 @@ export default function OrderLookupPage() {
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700 font-semibold">
+            <div ref={errorRef} className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700 font-semibold">
               {error}
             </div>
           )}
