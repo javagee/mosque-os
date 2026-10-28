@@ -75,7 +75,7 @@ export default async function AdminPage() {
         {/* Donation stats */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
-            { label: 'Total raised', value: `£${totalRaised}`, sub: 'direct donations' },
+            { label: 'Total raised', value: `S$${totalRaised}`, sub: 'direct donations' },
             { label: 'Total donors', value: totalDonors, sub: 'completed donations' },
             { label: 'Monthly givers', value: monthlyDonors, sub: 'active recurring' },
           ].map((stat) => (
@@ -96,7 +96,7 @@ export default async function AdminPage() {
                 {[
                   { label: 'Coupons sold', value: totalCouponsSold, sub: 'across all campaigns' },
                   { label: 'Coupons redeemed', value: totalCouponsRedeemed, sub: `${totalCouponsSold - totalCouponsRedeemed} unredeemed` },
-                  { label: 'Coupon revenue', value: `$${(couponRevenue / 100).toFixed(0)}`, sub: 'total collected' },
+                  { label: 'Coupon revenue', value: `S$${(couponRevenue / 100).toFixed(0)}`, sub: 'total collected' },
                 ].map((stat) => (
                   <div key={stat.label} className="bg-white rounded-2xl border border-gray-100 p-5">
                     <p className="text-xs text-gray-400 font-600">{stat.label}</p>

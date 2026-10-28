@@ -15,9 +15,9 @@ export default function AdminCharts({ byCategory }: Props) {
       <ResponsiveContainer width="100%" height={200}>
         <BarChart data={byCategory} barCategoryGap="30%">
           <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#9CA3AF' }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fontSize: 12, fill: '#9CA3AF' }} axisLine={false} tickLine={false} tickFormatter={(v) => `£${v}`} />
+          <YAxis tick={{ fontSize: 12, fill: '#9CA3AF' }} axisLine={false} tickLine={false} tickFormatter={(v) => `S$${v}`} />
           <Tooltip
-            formatter={(value) => [`£${Number(value).toFixed(2)}`, 'Total']}
+            formatter={(value) => [`S$${Number(value).toFixed(2)}`, 'Total']}
             contentStyle={{ borderRadius: '12px', border: '1px solid #E5E7EB', boxShadow: 'none' }}
           />
           <Bar dataKey="total" radius={[6, 6, 0, 0]}>
