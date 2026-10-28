@@ -206,7 +206,7 @@ export default function CheckoutPage() {
           </button>
 
           <p className="text-xs text-center text-gray-400">
-            Secured by Stripe · Coupons delivered to your email
+            Pay via PayNow · Zero platform fees · Coupon emailed after verification
           </p>
         </div>
       </div>

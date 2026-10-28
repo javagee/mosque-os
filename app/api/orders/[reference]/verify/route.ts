@@ -64,11 +64,16 @@ export async function POST(
 
   if (RESEND_API_KEY && !RESEND_API_KEY.includes('REPLACE_ME') && RESEND_API_KEY.length > 10) {
     try {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://mosque-os-ai.vercel.app'
       const voucherLinks = tokens
         .map((t, i) => `<div style="margin:12px 0;padding:16px;background:#F0F7F3;border-radius:12px;border:1px solid #1A3D2B20;">
           <p style="margin:0 0 4px;font-size:12px;color:#666;">Coupon ${i + 1} of ${order.quantity}</p>
           <p style="margin:0;font-family:monospace;font-size:18px;font-weight:bold;color:#1A3D2B;letter-spacing:2px;">${t}</p>
           <p style="margin:6px 0 0;font-size:12px;color:#888;">Valid at: ${order.merchant_name}</p>
+          <a href="${appUrl}/coupons/${t}" style="display:inline-block;margin-top:10px;padding:10px 20px;background:#1A3D2B;color:white;text-decoration:none;border-radius:8px;font-size:13px;font-weight:bold;">
+            View coupon &amp; QR code →
+          </a>
+          <p style="margin:6px 0 0;font-size:11px;color:#aaa;">Show this QR at the merchant — they will scan it to redeem</p>
         </div>`)
         .join('')
 
