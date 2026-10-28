@@ -45,23 +45,24 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-[#1A3D2B] flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
 
-        {/* Header */}
+        {/* Branding */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-[#1A3D2B] flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <div className="w-16 h-16 rounded-2xl bg-[#C9A84C]/20 border border-[#C9A84C]/30 flex items-center justify-center mx-auto mb-5">
+            <svg className="w-8 h-8 text-[#C9A84C]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-[#1A3D2B]">Admin Portal</h1>
-          <p className="text-sm text-gray-400 mt-1">Mosque management back-office</p>
+          <p className="text-[#C9A84C] text-xl font-semibold tracking-wide mb-1">إِمَارَة · Imara</p>
+          <h1 className="text-2xl font-bold text-white">Admin Portal</h1>
+          <p className="text-green-300/60 text-sm mt-1">Mosque management back-office</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 space-y-4">
+        <form onSubmit={handleSubmit} className="bg-white/8 border border-white/10 backdrop-blur-sm rounded-2xl p-7 space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1.5">Username</label>
+            <label className="block text-xs font-semibold text-green-300/70 mb-1.5 uppercase tracking-wide">Username</label>
             <input
               ref={usernameRef}
               type="text"
@@ -69,37 +70,37 @@ function LoginForm() {
               onChange={e => { setUsername(e.target.value); setError('') }}
               placeholder="admin"
               autoComplete="username"
-              className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1A3D2B]/30 focus:border-[#1A3D2B]"
+              className="w-full px-4 py-3 text-sm bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#C9A84C]/50 focus:border-[#C9A84C]/50 transition-all"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1.5">Password</label>
+            <label className="block text-xs font-semibold text-green-300/70 mb-1.5 uppercase tracking-wide">Password</label>
             <input
               type="password"
               value={password}
               onChange={e => { setPassword(e.target.value); setError('') }}
               placeholder="••••••••"
               autoComplete="current-password"
-              className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1A3D2B]/30 focus:border-[#1A3D2B]"
+              className="w-full px-4 py-3 text-sm bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#C9A84C]/50 focus:border-[#C9A84C]/50 transition-all"
             />
           </div>
 
           {error && (
-            <p className="text-sm text-red-600 font-semibold">{error}</p>
+            <p className="text-sm text-red-400 font-semibold bg-red-900/20 px-3 py-2 rounded-lg">{error}</p>
           )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-[#1A3D2B] text-white font-semibold rounded-xl hover:bg-[#2D6A4F] disabled:opacity-50 transition-colors"
+            className="w-full py-3.5 bg-[#C9A84C] text-[#1A3D2B] font-bold rounded-xl hover:bg-[#D4B865] disabled:opacity-50 transition-colors shadow-lg shadow-[#C9A84C]/20"
           >
-            {loading ? 'Signing in…' : 'Sign in'}
+            {loading ? 'Signing in…' : 'Sign in to Admin'}
           </button>
         </form>
 
-        <p className="text-center text-xs text-gray-400 mt-6">
-          Imara · {process.env.NEXT_PUBLIC_MOSQUE_NAME ?? 'Mosque'} admin
+        <p className="text-center text-xs text-green-300/30 mt-6">
+          Imara · Mosque Management Platform
         </p>
       </div>
     </div>

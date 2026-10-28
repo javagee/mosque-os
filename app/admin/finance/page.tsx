@@ -1,5 +1,5 @@
-import AdminSignOut from '@/components/admin/AdminSignOut'
 import { db } from '@/lib/db'
+import AdminSidebarLayout from '@/components/admin/AdminSidebarLayout'
 import { getAllOrders } from '@/lib/order-store'
 import type { Order, Coupon, Donor } from '@/types'
 import { WeeklyChart, ChannelDonut, CouponStatus, SettlementPipeline } from './FinanceCharts'
@@ -148,24 +148,20 @@ export default async function FinancePage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#FAFAFA] p-6">
-      <div className="max-w-6xl mx-auto space-y-6">
+    <AdminSidebarLayout mosqueName={mosqueName}>
+    <main className="min-h-screen bg-[#F0F4F3] p-6">
+      <div className="max-w-5xl mx-auto space-y-6">
 
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs font-600 text-gray-400 uppercase tracking-wide mb-1">Finance &amp; Donations</p>
+            <p className="text-xs font-600 text-[#C9A84C] uppercase tracking-widest mb-0.5">FINANCE & DONATIONS</p>
             <h1 className="text-2xl font-800 text-[#1A3D2B]">{mosqueName}</h1>
+            <p className="text-sm text-gray-400 mt-0.5">{new Date().toLocaleDateString('en-SG', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-600 text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg">
-              DEMO DATA — ILLUSTRATIVE ONLY
-            </span>
-            <a href="/admin" className="text-sm font-600 text-[#1A3D2B] bg-[#1A3D2B]/10 px-4 py-2 rounded-xl hover:bg-[#1A3D2B]/20 transition-colors">
-              ← Dashboard
-            </a>
-            <AdminSignOut />
-          </div>
+          <span className="text-xs font-600 text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg">
+            DEMO DATA — ILLUSTRATIVE ONLY
+          </span>
         </div>
 
         {/* KPI row */}
@@ -314,5 +310,6 @@ export default async function FinancePage() {
 
       </div>
     </main>
+    </AdminSidebarLayout>
   )
 }

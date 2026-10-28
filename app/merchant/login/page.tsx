@@ -102,33 +102,34 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-[#1A3D2B] flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
 
-        {/* Header */}
+        {/* Branding */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-[#1A3D2B] flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          <div className="w-16 h-16 rounded-2xl bg-[#C9A84C]/20 border border-[#C9A84C]/30 flex items-center justify-center mx-auto mb-5">
+            <svg className="w-8 h-8 text-[#C9A84C]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-[#1A3D2B]">Merchant Portal</h1>
-          <p className="text-sm text-gray-400 mt-1">
+          <p className="text-[#C9A84C] text-xl font-semibold tracking-wide mb-1">إِمَارَة · Imara</p>
+          <h1 className="text-2xl font-bold text-white">Merchant Portal</h1>
+          <p className="text-green-300/60 text-sm mt-1">
             {step === 'pin' ? 'Enter your 4-digit PIN' : 'Select your merchant'}
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
+        <div className="bg-white/8 border border-white/10 backdrop-blur-sm rounded-2xl p-7">
 
           {/* Step indicator */}
           <div className="flex items-center gap-2 mb-6">
-            <div className={`flex-1 h-1 rounded-full ${step === 'pin' ? 'bg-[#1A3D2B]' : 'bg-[#1A3D2B]'}`} />
-            <div className={`flex-1 h-1 rounded-full ${step === 'merchant' ? 'bg-[#1A3D2B]' : 'bg-gray-200'}`} />
+            <div className="flex-1 h-1 rounded-full bg-[#C9A84C]" />
+            <div className={`flex-1 h-1 rounded-full ${step === 'merchant' ? 'bg-[#C9A84C]' : 'bg-white/15'}`} />
           </div>
 
           {step === 'pin' ? (
             <>
-              <p className="text-xs font-semibold text-gray-400 text-center mb-4">Step 1 of 2 — PIN</p>
+              <p className="text-xs font-semibold text-green-300/50 text-center mb-4 uppercase tracking-wide">Step 1 of 2 — PIN</p>
               <div className="flex justify-center gap-3 mb-6">
                 {pin.map((digit, i) => (
                   <input
@@ -143,39 +144,39 @@ function LoginForm() {
                     disabled={loading}
                     className={`w-14 h-14 text-center text-2xl font-bold border-2 rounded-xl focus:outline-none transition-colors ${
                       error
-                        ? 'border-red-300 bg-red-50 text-red-600'
+                        ? 'border-red-400 bg-red-900/20 text-red-300'
                         : digit
-                        ? 'border-[#1A3D2B] bg-[#E8F0EC] text-[#1A3D2B]'
-                        : 'border-gray-200 bg-gray-50 text-gray-800'
+                        ? 'border-[#C9A84C] bg-[#C9A84C]/10 text-[#C9A84C]'
+                        : 'border-white/20 bg-white/10 text-white'
                     } ${loading ? 'opacity-50' : ''}`}
                   />
                 ))}
               </div>
               {error && (
-                <p className="text-center text-sm text-red-600 font-semibold mb-4">{error}</p>
+                <p className="text-center text-sm text-red-400 font-semibold mb-4 bg-red-900/20 px-3 py-2 rounded-lg">{error}</p>
               )}
               <button
                 onClick={() => validatePin(pin.join(''))}
                 disabled={pin.some(d => !d) || loading}
-                className="w-full py-3 bg-[#1A3D2B] text-white font-semibold rounded-xl hover:bg-[#2D6A4F] disabled:opacity-40 transition-colors"
+                className="w-full py-3.5 bg-[#C9A84C] text-[#1A3D2B] font-bold rounded-xl hover:bg-[#D4B865] disabled:opacity-40 transition-colors shadow-lg shadow-[#C9A84C]/20"
               >
                 {loading ? 'Verifying…' : 'Next →'}
               </button>
             </>
           ) : (
             <>
-              <p className="text-xs font-semibold text-gray-400 text-center mb-4">Step 2 of 2 — Merchant</p>
+              <p className="text-xs font-semibold text-green-300/50 text-center mb-4 uppercase tracking-wide">Step 2 of 2 — Merchant</p>
               <div className="mb-5">
-                <label className="block text-xs font-semibold text-gray-500 mb-2">Your merchant name</label>
+                <label className="block text-xs font-semibold text-green-300/70 mb-2 uppercase tracking-wide">Your merchant name</label>
                 {merchants.length > 0 ? (
                   <select
                     value={merchantName}
                     onChange={e => { setMerchantName(e.target.value); setError('') }}
-                    className="w-full px-3 py-3 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1A3D2B]/30 focus:border-[#1A3D2B] bg-white"
+                    className="w-full px-4 py-3 text-sm bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-[#C9A84C]/50 focus:border-[#C9A84C]/50 transition-all"
                   >
-                    <option value="">Select your merchant…</option>
+                    <option value="" className="bg-[#1A3D2B]">Select your merchant…</option>
                     {merchants.map(m => (
-                      <option key={m} value={m}>{m}</option>
+                      <option key={m} value={m} className="bg-[#1A3D2B]">{m}</option>
                     ))}
                   </select>
                 ) : (
@@ -184,23 +185,23 @@ function LoginForm() {
                     value={merchantName}
                     onChange={e => { setMerchantName(e.target.value); setError('') }}
                     placeholder="Type your merchant name"
-                    className="w-full px-3 py-3 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1A3D2B]/30 focus:border-[#1A3D2B]"
+                    className="w-full px-4 py-3 text-sm bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#C9A84C]/50 transition-all"
                   />
                 )}
               </div>
               {error && (
-                <p className="text-center text-sm text-red-600 font-semibold mb-4">{error}</p>
+                <p className="text-center text-sm text-red-400 font-semibold mb-4 bg-red-900/20 px-3 py-2 rounded-lg">{error}</p>
               )}
               <button
                 onClick={handleMerchantSubmit}
                 disabled={!merchantName || loading}
-                className="w-full py-3 bg-[#1A3D2B] text-white font-semibold rounded-xl hover:bg-[#2D6A4F] disabled:opacity-40 transition-colors"
+                className="w-full py-3.5 bg-[#C9A84C] text-[#1A3D2B] font-bold rounded-xl hover:bg-[#D4B865] disabled:opacity-40 transition-colors shadow-lg shadow-[#C9A84C]/20"
               >
                 {loading ? 'Entering portal…' : 'Enter portal'}
               </button>
               <button
                 onClick={() => { setStep('pin'); setPin(['', '', '', '']); setError('') }}
-                className="w-full mt-2 py-2 text-sm text-gray-400 hover:text-gray-600 transition-colors"
+                className="w-full mt-2 py-2 text-sm text-green-300/40 hover:text-green-300/70 transition-colors"
               >
                 ← Back
               </button>
@@ -208,8 +209,8 @@ function LoginForm() {
           )}
         </div>
 
-        <p className="text-center text-xs text-gray-400 mt-6">
-          Imara · {process.env.NEXT_PUBLIC_MOSQUE_NAME ?? 'Mosque'} merchant portal
+        <p className="text-center text-xs text-green-300/30 mt-6">
+          Imara · Mosque Management Platform
         </p>
       </div>
     </div>
