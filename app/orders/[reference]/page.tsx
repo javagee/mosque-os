@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { getOrder } from '@/lib/order-store'
 import Nav from '@/components/layout/Nav'
+import StatusRefresh from './StatusRefresh'
 
 export const dynamic = 'force-dynamic'
 
@@ -107,6 +108,7 @@ export default async function OrderStatusPage({
               The mosque team will check the PayNow transfer and verify within a few hours.
               Your e-coupon will be automatically emailed to <strong>{order.buyer_email}</strong> once verified.
             </p>
+            <StatusRefresh />
           </div>
         )}
 
