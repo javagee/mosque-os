@@ -98,12 +98,12 @@ export default function DonationForm() {
                     : 'bg-gray-50 text-gray-600 border border-gray-100 hover:border-gray-300 hover:bg-white'
                 }`}
               >
-                £{a}
+                S${a}
               </button>
             ))}
           </div>
           <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-semibold">£</span>
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-semibold">S$</span>
             <input
               type="number"
               placeholder="Other amount"
@@ -122,12 +122,12 @@ export default function DonationForm() {
           className="w-full py-4 rounded-xl text-base font-bold bg-[#1A3D2B] hover:bg-[#2D6A4F] disabled:opacity-50 disabled:cursor-not-allowed text-white transition-colors shadow-sm"
         >
           {loading
-            ? 'Redirecting to payment...'
-            : `Donate £${finalAmount || '—'}${type === 'monthly' ? '/month' : ''}`}
+            ? 'Processing...'
+            : `Donate S$${finalAmount || '—'}${type === 'monthly' ? '/month' : ''}`}
         </button>
 
         <p className="text-xs text-center text-gray-400">
-          Secured by Stripe · Your data stays with the mosque
+          PayNow · Zero fees · Your data stays with the mosque
         </p>
       </div>
     </div>

@@ -46,9 +46,9 @@ export const DONATION_CATEGORIES: Record<DonationCategory, { label: string; arab
     color: 'bg-amber-100 text-amber-800 border-amber-200',
   },
   lillah: {
-    label: "Lillah",
-    arabic: 'لله',
-    description: "Donation purely for the sake of Allah",
+    label: 'Infaq',
+    arabic: 'إنفاق',
+    description: 'Voluntary spending in the way of Allah',
     color: 'bg-purple-100 text-purple-800 border-purple-200',
   },
   general: {
