@@ -9,6 +9,25 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-[#F7F6F2]">
 
+      {/* Demo persona switcher — thin bar above nav */}
+      <div className="bg-[#111C16] border-b border-white/5 px-6 py-1.5">
+        <div className="max-w-5xl mx-auto flex items-center justify-between">
+          <span className="text-[10px] text-green-400/40 font-semibold tracking-widest">DEMO</span>
+          <div className="flex items-center gap-4 text-xs">
+            <span className="text-green-400/40">Switch persona:</span>
+            <Link href="/campaigns" className="text-green-300/60 hover:text-[#C9A84C] transition-colors font-semibold">
+              👤 Buyer
+            </Link>
+            <Link href="/merchant/login" className="text-green-300/60 hover:text-[#C9A84C] transition-colors font-semibold">
+              🏪 Merchant
+            </Link>
+            <Link href="/admin/login" className="text-green-300/60 hover:text-[#C9A84C] transition-colors font-semibold">
+              🛡 Admin
+            </Link>
+          </div>
+        </div>
+      </div>
+
       {/* Nav */}
       <nav className="bg-[#1A3D2B] sticky top-0 z-40">
         <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -24,6 +43,12 @@ export default function HomePage() {
             </Link>
             <Link href="/campaigns" className="px-3 py-2 rounded-lg text-sm text-green-200/70 hover:text-white hover:bg-white/10 transition-colors">
               Campaigns
+            </Link>
+            <Link href="/merchant/login" className="px-3 py-2 rounded-lg text-sm text-green-200/70 hover:text-white hover:bg-white/10 transition-colors">
+              Merchant
+            </Link>
+            <Link href="/admin/finance" className="px-3 py-2 rounded-lg text-sm text-green-200/70 hover:text-white hover:bg-white/10 transition-colors">
+              Admin
             </Link>
             <Link href="/donate" className="ml-2 px-4 py-2 rounded-lg bg-[#C9A84C] text-[#1A3D2B] text-sm font-bold hover:bg-[#D4B865] transition-colors">
               Donate
@@ -73,7 +98,7 @@ export default function HomePage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
             <div className="lg:pt-2">
               <p className="text-[#C9A84C] text-xs font-semibold tracking-widest mb-4">GIVE WITH INTENTION</p>
-              <h2 className="text-4xl font-bold text-[#1A3D2B] leading-tight">Every pound reaches the mosque.</h2>
+              <h2 className="text-4xl font-bold text-[#1A3D2B] leading-tight">Every dollar reaches the mosque.</h2>
               <p className="text-gray-500 mt-4 leading-relaxed text-sm">
                 No platform fees. No middlemen. Your donation goes directly to {mosqueName} — and your data stays yours.
               </p>
@@ -82,7 +107,7 @@ export default function HomePage() {
                 {[
                   { label: '100% reaches the mosque', desc: 'No platform fees deducted from your donation' },
                   { label: 'Your data stays yours', desc: 'Donor records stored securely, never sold or shared' },
-                  { label: 'Gift Aid ready', desc: 'UK taxpayers can boost their donation by 25%' },
+                  { label: 'PayNow — zero fees', desc: 'Pay directly via Singapore PayNow, no gateway charges' },
                 ].map(item => (
                   <div key={item.label} className="flex gap-4">
                     <div className="w-5 h-5 rounded-full bg-[#1A3D2B] flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -140,7 +165,7 @@ export default function HomePage() {
             <Link href="/display" className="hover:text-green-300 transition-colors">Prayer Times</Link>
             <Link href="/admin" className="hover:text-green-300 transition-colors">Admin</Link>
           </div>
-          <p className="text-xs text-green-400/30">Secured by Stripe · Built with Imara</p>
+          <p className="text-xs text-green-400/30">PayNow · Zero fees · Built with Imara</p>
         </div>
       </footer>
 
