@@ -100,6 +100,7 @@ export interface Order {
   mosque_portion: number  // in cents (e.g. 50% of total)
   merchant_portion: number
   status: OrderStatus
+  coupon_tokens?: string[]  // populated after admin verification
   created_at: string
   paid_at?: string         // when buyer clicked "I've paid"
   verified_at?: string     // when admin confirmed payment received

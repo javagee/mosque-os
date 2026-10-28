@@ -1,7 +1,9 @@
 import { db } from '@/lib/db'
 import AdminSidebarLayout from '@/components/admin/AdminSidebarLayout'
 import AdminOrderVerify from '@/components/admin/AdminOrderVerify'
+import AdminDonationVerify from '@/components/admin/AdminDonationVerify'
 import { getAllOrders, getPendingOrders } from '@/lib/order-store'
+import { getPendingDonations } from '@/lib/donation-store'
 import type { Order, Coupon, Donor } from '@/types'
 import { WeeklyChart, ChannelDonut, CouponStatus, SettlementPipeline } from './FinanceCharts'
 
@@ -99,12 +101,13 @@ function buildRecentActivity(orders: Order[], donors: Donor[]): RecentActivity[]
 export default async function FinancePage() {
   const mosqueName = process.env.NEXT_PUBLIC_MOSQUE_NAME ?? 'Al-Noor Mosque'
 
-  const [orders, campaigns, donors, redeemedCoupons, pendingOrders] = await Promise.all([
+  const [orders, campaigns, donors, redeemedCoupons, pendingOrders, pendingDonations] = await Promise.all([
     getAllOrders(),
     db.getAllCampaigns(),
     db.getDonors(),
     db.getRedeemedCoupons(),
     getPendingOrders(),
+    getPendingDonations(),
   ])
 
   const verifiedOrders = orders.filter(o => o.status === 'verified')
@@ -166,19 +169,37 @@ export default async function FinancePage() {
           </span>
         </div>
 
-        {/* Pending verifications — visible here so admin can verify without leaving Finance */}
+        {/* Pending coupon order verifications */}
         {pendingOrders.length > 0 && (
           <div className="bg-amber-50 border border-amber-200 rounded-2xl overflow-hidden">
             <div className="px-5 py-4 border-b border-amber-200 flex items-center gap-3">
               <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-              <h2 className="font-700 text-amber-800">
-                {pendingOrders.length} payment{pendingOrders.length > 1 ? 's' : ''} awaiting verification
+              <h2 className="font-semibold text-amber-800">
+                {pendingOrders.length} coupon payment{pendingOrders.length > 1 ? 's' : ''} awaiting verification
               </h2>
-              <span className="text-xs text-amber-600 ml-auto">Check mosque bank · then verify to release e-coupon</span>
+              <span className="text-xs text-amber-600 ml-auto">Check mosque bank · verify to release e-coupon</span>
             </div>
             <div className="divide-y divide-amber-100">
               {pendingOrders.map(order => (
                 <AdminOrderVerify key={order.reference} order={order} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Pending direct donation verifications */}
+        {pendingDonations.length > 0 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl overflow-hidden">
+            <div className="px-5 py-4 border-b border-amber-200 flex items-center gap-3">
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+              <h2 className="font-semibold text-amber-800">
+                {pendingDonations.length} direct donation{pendingDonations.length > 1 ? 's' : ''} awaiting verification
+              </h2>
+              <span className="text-xs text-amber-600 ml-auto">Check mosque bank · verify to record donation</span>
+            </div>
+            <div className="divide-y divide-amber-100">
+              {pendingDonations.map(d => (
+                <AdminDonationVerify key={d.reference} donation={d} />
               ))}
             </div>
           </div>

@@ -32,9 +32,6 @@ export async function POST(
     return NextResponse.json({ error: 'Order is not awaiting verification' }, { status: 400 })
   }
 
-  const updated = { ...order, status: 'verified' as const, verified_at: new Date().toISOString() }
-  await saveOrder(updated)
-
   // Generate tokens and create coupons now that payment is confirmed
   const tokens: string[] = []
   for (let i = 0; i < order.quantity; i++) tokens.push(generateToken())
@@ -58,6 +55,10 @@ export async function POST(
     console.error('Failed to create coupons after verification:', e)
   }
 
+  // Save verified status + tokens to order so resend endpoint can find them
+  const updated = { ...order, status: 'verified' as const, verified_at: new Date().toISOString(), coupon_tokens: tokens }
+  await saveOrder(updated)
+
   // Send voucher email to buyer
   const RESEND_API_KEY = process.env.RESEND_API_KEY
   const mosqueName = process.env.NEXT_PUBLIC_MOSQUE_NAME ?? 'Our Mosque'
@@ -77,7 +78,7 @@ export async function POST(
         </div>`)
         .join('')
 
-      await fetch('https://api.resend.com/emails', {
+      const emailRes = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -115,6 +116,12 @@ export async function POST(
 </div>`,
         }),
       })
+      if (!emailRes.ok) {
+        const errBody = await emailRes.text()
+        console.error(`Voucher email FAILED for ${order.reference} → ${order.buyer_email} | HTTP ${emailRes.status} | ${errBody}`)
+      } else {
+        console.log(`Voucher email sent for ${order.reference} → ${order.buyer_email}`)
+      }
     } catch (e) {
       console.error('Voucher email send failed:', e)
     }

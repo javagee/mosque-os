@@ -66,7 +66,7 @@ export async function POST(
 
     // Acknowledge donor
     try {
-      await fetch('https://api.resend.com/emails', {
+      const donorAckRes = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -94,6 +94,12 @@ export async function POST(
 </div>`,
         }),
       })
+      if (!donorAckRes.ok) {
+        const errBody = await donorAckRes.text()
+        console.error(`Donor ack email FAILED for ${donation.reference} → ${donation.donor_email} | HTTP ${donorAckRes.status} | ${errBody}`)
+      } else {
+        console.log(`Donor ack email sent for ${donation.reference} → ${donation.donor_email}`)
+      }
     } catch (e) {
       console.error('Donor acknowledgment email failed:', e)
     }

@@ -3,6 +3,7 @@ import { DONATION_CATEGORIES } from '@/types'
 import AdminOrderVerify from '@/components/admin/AdminOrderVerify'
 import AdminDonationVerify from '@/components/admin/AdminDonationVerify'
 import AdminSidebarLayout from '@/components/admin/AdminSidebarLayout'
+import AdminResendCoupon from '@/components/admin/AdminResendCoupon'
 import { getPendingOrders } from '@/lib/order-store'
 import { getPendingDonations } from '@/lib/donation-store'
 
@@ -271,6 +272,9 @@ export default async function AdminPage() {
             </div>
           )}
         </div>
+
+        {/* Resend e-coupon tool */}
+        <AdminResendCoupon />
 
       </div>
     </AdminSidebarLayout>
