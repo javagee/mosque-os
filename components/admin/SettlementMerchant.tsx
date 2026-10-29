@@ -24,6 +24,7 @@ export default function SettlementMerchant({
 }) {
   const router = useRouter()
   const [expanded, setExpanded] = useState(false)
+  const [confirming, setConfirming] = useState(false)
   const [settling, setSettling] = useState(false)
   const [done, setDone] = useState(false)
 
@@ -90,18 +91,46 @@ export default function SettlementMerchant({
             >
               {expanded ? 'Hide' : 'View'} vouchers
             </button>
-            {hasPending && (
+            {hasPending && !confirming && (
               <button
-                onClick={handleSettle}
-                disabled={settling}
-                className="text-sm px-4 py-2 rounded-xl bg-[#1A3D2B] text-white font-semibold hover:bg-[#2D6A4F] disabled:opacity-50 transition-colors whitespace-nowrap"
+                onClick={() => setConfirming(true)}
+                className="text-sm px-4 py-2 rounded-xl bg-[#1A3D2B] text-white font-semibold hover:bg-[#2D6A4F] transition-colors whitespace-nowrap"
               >
-                {settling ? 'Marking…' : `Mark settled · ${fmt(pendingMerchantTotal, currency)}`}
+                Mark settled · {fmt(pendingMerchantTotal, currency)}
               </button>
             )}
           </div>
         </div>
       </div>
+
+      {confirming && (
+        <div className="border-t border-amber-200 bg-amber-50 px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="flex-1">
+            <p className="font-semibold text-amber-800 text-sm">Confirm settlement for {merchantName}?</p>
+            <p className="text-xs text-amber-700 mt-0.5">
+              This marks {pendingCoupons.length} voucher{pendingCoupons.length !== 1 ? 's' : ''} as settled —{' '}
+              transfer <strong>{fmt(pendingMerchantTotal, currency)}</strong> to {merchantName} via PayNow before confirming.
+              This cannot be undone.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={() => setConfirming(false)}
+              disabled={settling}
+              className="text-sm px-4 py-2 rounded-xl border border-amber-300 text-amber-700 hover:bg-amber-100 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSettle}
+              disabled={settling}
+              className="text-sm px-4 py-2 rounded-xl bg-emerald-700 text-white font-semibold hover:bg-emerald-800 disabled:opacity-50 transition-colors whitespace-nowrap"
+            >
+              {settling ? 'Marking…' : 'Yes, mark settled'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {expanded && (
         <div className="border-t border-gray-100">

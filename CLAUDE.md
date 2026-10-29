@@ -73,21 +73,54 @@ Singapore static QR, zero gateway fees, trust-based confirmation:
 
 ```
 /campaigns/[id]/checkout  (name + email + quantity)
-        ↓ POST /api/orders
+        ↓ POST /api/orders  →  creates Order with reference IMA-XXXXXX
 /pay/[reference]          (static PayNow QR, 15-min countdown, copy-to-clipboard UEN + ref)
         ↓ buyer pays bank app, clicks "I've completed payment"
 POST /api/orders/[reference]/confirm
   → order: pending_payment → pending_verification
-  → db.createCoupons() stores voucher tokens in DB (scannable at /merchant/redeem)
-  → db.updateCampaignSoldCount()
-  → Resend email with voucher tokens to buyer
-        ↓ admin checks bank, clicks "Verify payment" in /admin
+  → Brevo: acknowledgment email to buyer (includes reference, no coupon yet)
+  → Brevo: notification email to admin with order details + link to /admin
+        ↓ admin checks bank statement, clicks "Verify & Send E-Coupon"
 POST /api/orders/[reference]/verify
   → order: pending_verification → verified
+  → generates coupon tokens (XXXX-XXXX-XXXX format, one per quantity)
+  → db.createCoupons() stores tokens in DB with serial numbers ORDER_REF-01, -02, etc.
+  → db.updateCampaignSoldCount()
+  → Brevo: voucher email to buyer listing all coupon tokens
 ```
 
 Env vars needed: `PAYNOW_UEN` (mosque UEN), `PAYNOW_QR_URL` (URL to static QR image).  
 Split is hardcoded 50/50: `mosque_portion = Math.floor(total * 0.5)`.
+
+#### Two identifiers — not the same thing
+
+| Identifier | Format | Purpose | Created when |
+|---|---|---|---|
+| Order Reference | `IMA-XXXXXX` (e.g. `IMA-Y5MNEA`) | Buyer tracks order status at `/orders` | Order placed |
+| Coupon Token | `XXXX-XXXX-XXXX` (e.g. `ABCD-EFG2-HJK3`) | Merchant redeems at `/merchant/redeem` | Admin verifies payment |
+
+One order reference maps to one or more coupon tokens (one per coupon quantity purchased). Coupon serial numbers link them: `IMA-Y5MNEA-01`, `IMA-Y5MNEA-02`, etc.
+
+#### Admin verification — where to act
+
+The pending verification amber panel appears automatically in **two places** whenever there are orders awaiting bank confirmation:
+
+1. `/admin` — main dashboard, amber panel at the top
+2. `/admin/finance` — finance page, same amber panel just below the header
+
+Both show a "Verify & Send E-Coupon" button per order. The panel is hidden when nothing is pending.
+
+Admin verification steps:
+1. Admin gets email notification → logs into `/admin` or `/admin/finance`
+2. Sees amber panel with order details (reference, buyer, campaign, amount, timestamp)
+3. Checks mosque bank app to confirm the PayNow transfer amount + reference matches
+4. Clicks **"Verify & Send E-Coupon"** → coupon tokens created in DB and emailed to buyer instantly
+
+#### Buyer order recovery
+
+If a buyer closes the success page before saving their reference:
+- Nav → **Track Order** → `/orders` → enter `IMA-XXXXXX` + email used at checkout
+- Success page (`/donate/success?type=coupon&ref=IMA-XXXXXX`) shows a prominent "Check order status →" button linking to `/orders/IMA-XXXXXX` — buyers should bookmark that URL
 
 ### Settlement Flow
 
@@ -150,6 +183,7 @@ All three providers return a `ReadableStream` with `Content-Type: text/plain`. `
 | `GEMINI_API_KEY` | Gemini chat (Vercel, no Ollama) | AI chat |
 | `OLLAMA_ENABLED/URL/MODEL` | Local Ollama LLM | AI chat (local) |
 | `ANTHROPIC_API_KEY` | Claude API fallback | AI chat |
-| `RESEND_API_KEY` + `RESEND_FROM_EMAIL` | Voucher email delivery | Email |
+| `BREVO_API_KEY` | Brevo transactional email (POST to api.brevo.com/v3/smtp/email) | Email |
+| `BREVO_FROM_EMAIL` | Verified sender address in Brevo (e.g. `saraghazsk@gmail.com`) | Email |
 | `STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET` | Stripe donations | Stripe path only |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe client | Stripe path only |
