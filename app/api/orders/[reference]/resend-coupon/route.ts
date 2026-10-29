@@ -14,13 +14,32 @@ export async function POST(
   { params }: { params: Promise<{ reference: string }> }
 ) {
   const { reference } = await params
-  const order = await getOrder(reference)
+  let order = await getOrder(reference)
   if (!order) return NextResponse.json({ error: 'Order not found' }, { status: 404 })
   if (order.status !== 'verified') {
     return NextResponse.json({ error: 'Order is not yet verified — verify payment first' }, { status: 400 })
   }
   if (!order.coupon_tokens || order.coupon_tokens.length === 0) {
-    return NextResponse.json({ error: 'No coupon tokens found on this order. This order may have been verified before token tracking was added. Contact support.' }, { status: 404 })
+    // Fallback: scan campaign token list to recover tokens for pre-fix orders (e.g. IMA-AC5NKD)
+    try {
+      const { Redis } = await import('@upstash/redis')
+      const redis = new Redis({ url: process.env.UPSTASH_REDIS_REST_URL!, token: process.env.UPSTASH_REDIS_REST_TOKEN! })
+      const campaignTokens = await redis.lrange<string>(`campaign:${order.campaign_id}:coupon_tokens`, 0, -1)
+      const recovered: string[] = []
+      for (const t of campaignTokens) {
+        const coupon = await redis.get<{ stripe_session_id?: string }>(`coupon:${t}`)
+        if (coupon?.stripe_session_id === reference) recovered.push(t)
+      }
+      if (recovered.length > 0) {
+        const { saveOrder } = await import('@/lib/order-store')
+        await saveOrder({ ...order, coupon_tokens: recovered })
+        order = { ...order, coupon_tokens: recovered }
+      }
+    } catch { /* Redis unavailable — fall through to error */ }
+
+    if (!order.coupon_tokens || order.coupon_tokens.length === 0) {
+      return NextResponse.json({ error: 'No coupon tokens found on this order. This order may have been verified before token tracking was added. Contact support.' }, { status: 404 })
+    }
   }
 
   const BREVO_API_KEY = process.env.BREVO_API_KEY

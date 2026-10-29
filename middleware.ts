@@ -25,9 +25,17 @@ export function middleware(req: NextRequest) {
     }
   }
 
+  // Protect /api/admin/* except the auth endpoint itself
+  if (pathname.startsWith('/api/admin') && !pathname.startsWith('/api/admin/auth')) {
+    const auth = req.cookies.get('admin_auth')
+    if (!auth?.value) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+  }
+
   return NextResponse.next()
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/merchant/:path*'],
+  matcher: ['/admin/:path*', '/merchant/:path*', '/api/admin/:path*'],
 }

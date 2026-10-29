@@ -26,28 +26,27 @@ function isoWeekLabel(dateStr: string): string {
 }
 
 function buildWeeklyData(orders: Order[], donors: Donor[]) {
-  const map: Record<string, { donations: number; coupons: number }> = {}
+  const map: Record<string, { donations: number; coupons: number; ts: number }> = {}
 
   for (const o of orders) {
     if (o.status !== 'verified') continue
     const label = isoWeekLabel(o.created_at)
-    if (!map[label]) map[label] = { donations: 0, coupons: 0 }
+    const ts = new Date(o.created_at).getTime()
+    if (!map[label]) map[label] = { donations: 0, coupons: 0, ts }
     map[label].coupons += o.total
   }
   for (const d of donors) {
     const label = isoWeekLabel(d.created_at)
-    if (!map[label]) map[label] = { donations: 0, coupons: 0 }
+    const ts = new Date(d.created_at).getTime()
+    if (!map[label]) map[label] = { donations: 0, coupons: 0, ts }
     map[label].donations += d.amount
   }
 
-  // Sort by first date seen within each week label, keep last 5 weeks
+  // Sort by first timestamp seen in each week bucket, keep last 5 weeks
   return Object.entries(map)
-    .sort(([a], [b]) => {
-      const parseFirst = (s: string) => new Date(s.split('–')[0].trim() + ' 2026').getTime()
-      return parseFirst(a) - parseFirst(b)
-    })
+    .sort(([, a], [, b]) => a.ts - b.ts)
     .slice(-5)
-    .map(([week, v]) => ({ week, ...v }))
+    .map(([week, v]) => ({ week, donations: v.donations, coupons: v.coupons }))
 }
 
 function buildChannelData(orders: Order[], donors: Donor[]) {
