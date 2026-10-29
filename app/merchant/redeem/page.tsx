@@ -12,9 +12,12 @@ function fmt(amount: number, currency: string) {
 // QR Scanner using browser BarcodeDetector API
 function QrScanner({ onScan }: { onScan: (token: string) => void }) {
   const videoRef = useRef<HTMLVideoElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [active, setActive] = useState(false)
   const [unsupported, setUnsupported] = useState(false)
   const [denied, setDenied] = useState(false)
+  const [uploadError, setUploadError] = useState('')
+  const [uploadProcessing, setUploadProcessing] = useState(false)
   const scanLoopRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
 
@@ -66,6 +69,34 @@ function QrScanner({ onScan }: { onScan: (token: string) => void }) {
     scanLoopRef.current = setTimeout(scan, 800)
   }, [active, onScan, stopScanner])
 
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadError('')
+    setUploadProcessing(true)
+    try {
+      if (!('BarcodeDetector' in window)) {
+        setUploadError('QR image reading is not supported on this browser. Enter the token manually.')
+        return
+      }
+      const bitmap = await createImageBitmap(file)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const detector = new (window as any).BarcodeDetector({ formats: ['qr_code'] })
+      const codes = await detector.detect(bitmap)
+      bitmap.close()
+      if (codes.length === 0) {
+        setUploadError('No QR code found in this image. Make sure the QR code is clearly visible and try again.')
+        return
+      }
+      onScan(codes[0].rawValue as string)
+    } catch {
+      setUploadError('Could not read the image. Please try a clearer photo.')
+    } finally {
+      setUploadProcessing(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
   useEffect(() => () => stopScanner(), [stopScanner])
 
   if (unsupported) return null
@@ -74,6 +105,7 @@ function QrScanner({ onScan }: { onScan: (token: string) => void }) {
     <div className="mb-4">
       {!active ? (
         <div className="space-y-2">
+          {/* Live camera scan */}
           <button
             onClick={startScanner}
             className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-[#1A3D2B]/30 text-[#1A3D2B] text-sm font-semibold hover:border-[#1A3D2B]/60 hover:bg-[#1A3D2B]/5 transition-colors"
@@ -83,9 +115,34 @@ function QrScanner({ onScan }: { onScan: (token: string) => void }) {
             </svg>
             Scan QR Code
           </button>
+
+          {/* Upload from gallery */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleImageUpload}
+          />
+          <button
+            onClick={() => { setUploadError(''); fileInputRef.current?.click() }}
+            disabled={uploadProcessing}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-gray-200 text-gray-500 text-sm font-semibold hover:border-gray-300 hover:bg-gray-50 disabled:opacity-40 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            {uploadProcessing ? 'Reading QR…' : 'Upload QR Image from Gallery'}
+          </button>
+
+          {uploadError && (
+            <p className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-center">
+              {uploadError}
+            </p>
+          )}
           {denied && (
             <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-center">
-              Camera access was denied. Enable it in your browser settings and try again, or enter the token manually below.
+              Camera access was denied. Enable it in your browser settings, or upload a QR image instead.
             </p>
           )}
         </div>
