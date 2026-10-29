@@ -190,7 +190,11 @@ function RedeemContent() {
   }, [tokenFromUrl])
 
   async function fetchCoupon(t: string) {
-    const clean = t.trim()
+    let clean = t.trim()
+    // Accept full coupon URLs — extract the token from the last path segment
+    if (clean.startsWith('http')) {
+      try { clean = new URL(clean).pathname.split('/').filter(Boolean).pop() ?? clean } catch { /* use as-is */ }
+    }
     if (!clean) return
     setLoading(true)
     setError('')
