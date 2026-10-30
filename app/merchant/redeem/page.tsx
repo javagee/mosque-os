@@ -79,13 +79,56 @@ function QrScanner({ onScan }: { onScan: (token: string) => void }) {
         setUploadError('QR image reading is not supported on this browser. Enter the token manually.')
         return
       }
-      const bitmap = await createImageBitmap(file)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const detector = new (window as any).BarcodeDetector({ formats: ['qr_code'] })
-      const codes = await detector.detect(bitmap)
+
+      // Pass 1: original image
+      const bitmap = await createImageBitmap(file)
+      let codes = await detector.detect(bitmap)
       bitmap.close()
+
+      // Pass 2: if no QR found, scale to ~1024px wide — helps when screenshot is very large
+      // and the QR code is proportionally small (e.g. full phone screenshot of the coupon page)
       if (codes.length === 0) {
-        setUploadError('No QR code found in this image. Make sure the QR code is clearly visible and try again.')
+        const img = new window.Image()
+        const objUrl = URL.createObjectURL(file)
+        await new Promise<void>((res, rej) => { img.onload = () => res(); img.onerror = rej; img.src = objUrl })
+        URL.revokeObjectURL(objUrl)
+
+        const TARGET = 1024
+        const scale = img.width > TARGET ? TARGET / img.width : 1
+        const canvas = document.createElement('canvas')
+        canvas.width = Math.round(img.width * scale)
+        canvas.height = Math.round(img.height * scale)
+        canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
+        const scaled = await createImageBitmap(canvas)
+        codes = await detector.detect(scaled)
+        scaled.close()
+      }
+
+      // Pass 3: crop to centre 60% of the image — catches cases where the QR is
+      // embedded in a complex campaign banner with other elements around it
+      if (codes.length === 0) {
+        const img2 = new window.Image()
+        const objUrl2 = URL.createObjectURL(file)
+        await new Promise<void>((res, rej) => { img2.onload = () => res(); img2.onerror = rej; img2.src = objUrl2 })
+        URL.revokeObjectURL(objUrl2)
+
+        const cropX = img2.width * 0.2
+        const cropY = img2.height * 0.2
+        const cropW = img2.width * 0.6
+        const cropH = img2.height * 0.6
+        const canvas2 = document.createElement('canvas')
+        canvas2.width = cropW
+        canvas2.height = cropH
+        canvas2.getContext('2d')!.drawImage(img2, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH)
+        const cropped = await createImageBitmap(canvas2)
+        codes = await detector.detect(cropped)
+        cropped.close()
+      }
+
+      if (codes.length === 0) {
+        setUploadError('No QR code found. Try cropping the image to show just the QR code, or use the live camera scanner instead.')
         return
       }
       onScan(codes[0].rawValue as string)
