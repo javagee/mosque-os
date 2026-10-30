@@ -10,7 +10,7 @@ export default async function CouponPage({ params }: { params: Promise<{ token: 
   if (!coupon) notFound()
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
-  const redemptionUrl = `${appUrl}/merchant/redeem?token=${token}`
+  const redemptionUrl = `${appUrl}/coupons/${token}`
 
   return (
     <main className="min-h-screen bg-[#FAFAFA] flex items-center justify-center px-4 py-12">

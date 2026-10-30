@@ -22,7 +22,7 @@ const DEMO_COUPON = {
 
 export default function DemoCouponPage() {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://mosque-os-ai.vercel.app'
-  const redemptionUrl = `${appUrl}/merchant/redeem?token=DEMO-SMPL-0001`
+  const redemptionUrl = `${appUrl}/coupons/DEMO-SMPL-0001`
 
   return (
     <main className="min-h-screen bg-[#FAFAFA] flex items-center justify-center px-4 py-12">
