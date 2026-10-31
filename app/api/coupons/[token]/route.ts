@@ -70,7 +70,12 @@ export async function POST(
 
   const updated = await db.redeemCoupon(token, outlet ?? null)
   if (!updated) {
-    return NextResponse.json({ error: 'Redemption failed — coupon may have already been used' }, { status: 409 })
+    // Fetch current state so the client can flip the card to ALREADY REDEEMED
+    const current = await db.getCouponByToken(token)
+    return NextResponse.json(
+      { error: 'Redemption failed — coupon may have already been used', coupon: current ?? coupon },
+      { status: 409 }
+    )
   }
 
   // Notify admin that a coupon was redeemed

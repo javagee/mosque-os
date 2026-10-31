@@ -267,7 +267,13 @@ function RedeemContent() {
         body: JSON.stringify({ outlet: outlet || null }),
       })
       const data = await res.json()
-      if (!res.ok) { setError(data.error ?? 'Redemption failed'); setLoading(false); return }
+      if (!res.ok) {
+        setError(data.error ?? 'Redemption failed')
+        // Auto-flip card to ALREADY REDEEMED when the coupon was concurrently redeemed
+        if (res.status === 409 && data.coupon) setCoupon(data.coupon)
+        setLoading(false)
+        return
+      }
       setSuccess(true)
       setCoupon(data.coupon)
     } catch { setError('Redemption failed') }
@@ -347,7 +353,7 @@ function RedeemContent() {
 
         {/* Coupon card */}
         {coupon && !success && (
-          <div className={`bg-white rounded-2xl border shadow-sm overflow-hidden ${
+          <div className={`bg-white rounded-2xl border shadow-sm overflow-hidden relative ${
             isRedeemed ? 'border-gray-200' : isExpired ? 'border-red-200' : 'border-[#1A3D2B]'
           }`}>
             {/* Status bar */}
@@ -390,6 +396,15 @@ function RedeemContent() {
                 </p>
               )}
             </div>
+
+            {/* CDC-style REDEEMED stamp */}
+            {isRedeemed && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="border-[3px] border-red-500 text-red-500 text-2xl font-black px-6 py-2 rounded-lg rotate-[-18deg] opacity-55 tracking-widest select-none">
+                  REDEEMED
+                </div>
+              </div>
+            )}
 
             {/* Redeem action */}
             {isActive && (
