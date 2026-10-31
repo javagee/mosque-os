@@ -15,7 +15,6 @@ const nextConfig: NextConfig = {
   // Exclude heavy dev-only packages from the serverless function bundle
   outputFileTracingExcludes: {
     '*': [
-      'node_modules/@swc/**',
       'node_modules/webpack/**',
       'node_modules/terser/**',
       'node_modules/typescript/**',
