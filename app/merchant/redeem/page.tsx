@@ -223,6 +223,7 @@ function RedeemContent() {
   const [success, setSuccess] = useState(false)
   const [merchantName, setMerchantName] = useState('')
   const [recentRedemptions, setRecentRedemptions] = useState<Coupon[]>([])
+  const [redirectCountdown, setRedirectCountdown] = useState(0)
 
   const loadRecentRedemptions = useCallback(async () => {
     try {
@@ -237,12 +238,26 @@ function RedeemContent() {
   useEffect(() => {
     fetch('/api/merchant/me').then(r => r.json()).then(d => setMerchantName(d.merchantName ?? '')).catch(() => {})
     loadRecentRedemptions()
+    // Poll every 15 s so any device picks up redemptions made on another device
+    const poll = setInterval(loadRecentRedemptions, 15_000)
+    return () => clearInterval(poll)
   }, [loadRecentRedemptions])
 
   useEffect(() => {
     if (tokenFromUrl) fetchCoupon(tokenFromUrl)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tokenFromUrl])
+
+  // Countdown redirect after successful redemption
+  useEffect(() => {
+    if (redirectCountdown <= 0) return
+    if (redirectCountdown === 1) {
+      const t = setTimeout(() => { window.location.href = '/merchant/history' }, 1000)
+      return () => clearTimeout(t)
+    }
+    const t = setTimeout(() => setRedirectCountdown(c => c - 1), 1000)
+    return () => clearTimeout(t)
+  }, [redirectCountdown])
 
   async function fetchCoupon(t: string) {
     let clean = t.trim()
@@ -289,6 +304,9 @@ function RedeemContent() {
       setSuccess(true)
       setCoupon(data.coupon)
       loadRecentRedemptions()
+      // Auto-redirect to history after 3 s so merchant sees the logged record
+      setRedirectCountdown(3)
+
     } catch { setError('Redemption failed') }
     setLoading(false)
   }
@@ -308,6 +326,41 @@ function RedeemContent() {
           <h1 className="text-2xl font-bold text-[#1A3D2B]">Redeem Voucher</h1>
           <p className="text-sm text-gray-400 mt-0.5">Scan or enter a customer coupon token</p>
         </div>
+
+        {/* Recent redemptions — above the form so it's immediately visible on any device */}
+        {recentRedemptions.length > 0 && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+              <p className="text-sm font-bold text-gray-700">Recent redemptions</p>
+              <a href="/merchant/history" className="text-xs text-[#1A3D2B] font-semibold hover:underline">View all →</a>
+            </div>
+            <div className="divide-y divide-gray-50">
+              {recentRedemptions.map(r => {
+                const price = r.campaign?.coupon_price ?? 0
+                const cur = r.campaign?.currency ?? 'sgd'
+                const share = Math.floor(price / 2)
+                return (
+                  <div key={r.token} className="px-5 py-3 flex items-center justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="font-mono text-xs text-gray-400">{r.serial_number}</span>
+                        <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Redeemed</span>
+                      </div>
+                      <p className="text-sm font-semibold text-gray-800 truncate">{r.campaign?.name ?? '—'}</p>
+                      <p className="text-xs text-gray-400">{r.buyer_name}
+                        {r.redeemed_at && <> · {new Date(r.redeemed_at).toLocaleTimeString('en-SG', { hour: '2-digit', minute: '2-digit' })}</>}
+                      </p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-xs text-gray-400">Your share</p>
+                      <p className="font-bold text-[#1A3D2B] text-sm">{fmt(share, cur)}</p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         {/* QR Scanner + Token Input */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
@@ -355,9 +408,14 @@ function RedeemContent() {
             </div>
             <p className="text-lg font-bold text-[#1A3D2B]">Voucher Redeemed!</p>
             <p className="text-sm text-gray-500 mt-1">Please fulfil the meal / service for the customer now.</p>
+            {redirectCountdown > 0 && (
+              <p className="text-xs text-gray-400 mt-2">
+                Going to history in {redirectCountdown}s…
+              </p>
+            )}
             <div className="flex items-center justify-center gap-3 mt-4">
               <button
-                onClick={() => { setToken(''); setCoupon(null); setSuccess(false); setError('') }}
+                onClick={() => { setRedirectCountdown(0); setToken(''); setCoupon(null); setSuccess(false); setError('') }}
                 className="px-5 py-2 rounded-xl border border-[#1A3D2B] text-[#1A3D2B] text-sm font-semibold hover:bg-[#1A3D2B]/5 transition-colors"
               >
                 Redeem another
@@ -448,41 +506,6 @@ function RedeemContent() {
             )}
           </div>
         )}
-        {/* Recent redemptions — always visible so any device can confirm what was redeemed */}
-        {recentRedemptions.length > 0 && (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
-              <p className="text-sm font-bold text-gray-700">Recent redemptions</p>
-              <a href="/merchant/history" className="text-xs text-[#1A3D2B] font-semibold hover:underline">View all →</a>
-            </div>
-            <div className="divide-y divide-gray-50">
-              {recentRedemptions.map(r => {
-                const price = r.campaign?.coupon_price ?? 0
-                const cur = r.campaign?.currency ?? 'sgd'
-                const share = Math.floor(price / 2)
-                return (
-                  <div key={r.token} className="px-5 py-3 flex items-center justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <span className="font-mono text-xs text-gray-400">{r.serial_number}</span>
-                        <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Redeemed</span>
-                      </div>
-                      <p className="text-sm font-semibold text-gray-800 truncate">{r.campaign?.name ?? '—'}</p>
-                      <p className="text-xs text-gray-400">{r.buyer_name}
-                        {r.redeemed_at && <> · {new Date(r.redeemed_at).toLocaleTimeString('en-SG', { hour: '2-digit', minute: '2-digit' })}</>}
-                      </p>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-xs text-gray-400">Your share</p>
-                      <p className="font-bold text-[#1A3D2B] text-sm">{fmt(share, cur)}</p>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
       </div>
     </MerchantSidebarLayout>
   )
