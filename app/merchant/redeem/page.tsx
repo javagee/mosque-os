@@ -223,7 +223,7 @@ function RedeemContent() {
   const [success, setSuccess] = useState(false)
   const [merchantName, setMerchantName] = useState('')
   const [recentRedemptions, setRecentRedemptions] = useState<Coupon[]>([])
-  const [redirectCountdown, setRedirectCountdown] = useState(0)
+  const [resetCountdown, setResetCountdown] = useState(0)
 
   const loadRecentRedemptions = useCallback(async () => {
     try {
@@ -248,16 +248,18 @@ function RedeemContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tokenFromUrl])
 
-  // Countdown redirect after successful redemption
+  // Countdown auto-reset after successful redemption — stays on redeem page for next customer
   useEffect(() => {
-    if (redirectCountdown <= 0) return
-    if (redirectCountdown === 1) {
-      const t = setTimeout(() => { window.location.href = '/merchant/history' }, 1000)
+    if (resetCountdown <= 0) return
+    if (resetCountdown === 1) {
+      const t = setTimeout(() => {
+        setToken(''); setCoupon(null); setSuccess(false); setError(''); setResetCountdown(0)
+      }, 1000)
       return () => clearTimeout(t)
     }
-    const t = setTimeout(() => setRedirectCountdown(c => c - 1), 1000)
+    const t = setTimeout(() => setResetCountdown(c => c - 1), 1000)
     return () => clearTimeout(t)
-  }, [redirectCountdown])
+  }, [resetCountdown])
 
   async function fetchCoupon(t: string) {
     let clean = t.trim()
@@ -304,9 +306,8 @@ function RedeemContent() {
       setSuccess(true)
       setCoupon(data.coupon)
       loadRecentRedemptions()
-      // Auto-redirect to history after 3 s so merchant sees the logged record
-      setRedirectCountdown(3)
-
+      // Auto-reset to blank form after 4 s — keeps the stall moving for the next customer
+      setResetCountdown(4)
     } catch { setError('Redemption failed') }
     setLoading(false)
   }
@@ -408,17 +409,17 @@ function RedeemContent() {
             </div>
             <p className="text-lg font-bold text-[#1A3D2B]">Voucher Redeemed!</p>
             <p className="text-sm text-gray-500 mt-1">Please fulfil the meal / service for the customer now.</p>
-            {redirectCountdown > 0 && (
+            {resetCountdown > 0 && (
               <p className="text-xs text-gray-400 mt-2">
-                Going to history in {redirectCountdown}s…
+                Ready for next customer in {resetCountdown}s…
               </p>
             )}
             <div className="flex items-center justify-center gap-3 mt-4">
               <button
-                onClick={() => { setRedirectCountdown(0); setToken(''); setCoupon(null); setSuccess(false); setError('') }}
+                onClick={() => { setResetCountdown(0); setToken(''); setCoupon(null); setSuccess(false); setError('') }}
                 className="px-5 py-2 rounded-xl border border-[#1A3D2B] text-[#1A3D2B] text-sm font-semibold hover:bg-[#1A3D2B]/5 transition-colors"
               >
-                Redeem another
+                Next customer
               </button>
               <a
                 href="/merchant/history"
