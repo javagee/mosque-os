@@ -140,6 +140,22 @@ export interface RamadanConfig {
   hijri_month?: string              // e.g. "Ramadan 1446"
 }
 
+// ── Jemaah (Congregation) types ──────────────────────────────────────────────
+
+export interface Jemaah {
+  id: string        // JM-XXXXXX
+  name: string
+  email: string
+  phone?: string
+  created_at: string
+}
+
+export interface JemaahCheckIn {
+  jemaah_id: string
+  date: string      // YYYY-MM-DD
+  checked_in_at: string
+}
+
 export interface Coupon {
   id: string
   token: string
