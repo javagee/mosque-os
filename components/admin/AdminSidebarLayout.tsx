@@ -33,6 +33,15 @@ const NAV = [
     ),
   },
   {
+    label: 'Ramadan Board',
+    href: '/admin/ramadan',
+    icon: (
+      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 3a9 9 0 100 18A9 9 0 0012 3zm0 2a7 7 0 010 14 7 7 0 010-14zm3.5 1.5a5.5 5.5 0 00-5.5 5.5 5.5 5.5 0 005.5 5.5 5.5 5.5 0 001-.09A5.5 5.5 0 0112 20.5 5.5 5.5 0 016.5 15 5.5 5.5 0 0112 9.5a5.5 5.5 0 011-.09 5.5 5.5 0 002.5.09z"/>
+      </svg>
+    ),
+  },
+  {
     label: 'Settlement',
     href: '/admin/settlements',
     icon: (

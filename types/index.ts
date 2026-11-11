@@ -108,6 +108,38 @@ export interface Order {
   merchant_settled_at?: string
 }
 
+// ── Ramadan Sadaqah Board types ───────────────────────────────────────────────
+
+export interface RamadanSponsor {
+  id: string
+  night: number
+  year: number
+  donor_name: string
+  donor_email: string
+  amount: number        // in cents
+  message?: string
+  anonymous: boolean
+  status: 'pending' | 'confirmed'
+  order_reference?: string
+  created_at: string
+}
+
+export interface RamadanNightData {
+  night: number         // 1–30
+  target: number        // in cents
+  raised: number        // in cents (sum of confirmed sponsors)
+  sponsors: RamadanSponsor[]
+  status: 'available' | 'partial' | 'sponsored'
+}
+
+export interface RamadanConfig {
+  year: number
+  default_target: number            // in cents, e.g. 10000 = S$100
+  night_targets: Record<number, number>  // per-night overrides
+  active: boolean
+  hijri_month?: string              // e.g. "Ramadan 1446"
+}
+
 export interface Coupon {
   id: string
   token: string

@@ -59,6 +59,21 @@ export async function POST(
   const updated = { ...order, status: 'verified' as const, verified_at: new Date().toISOString(), coupon_tokens: tokens }
   await saveOrder(updated)
 
+  // If this is a Ramadan sadaqah order, confirm the sponsor
+  if (order.campaign_id === 'ramadan') {
+    try {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+      await fetch(`${appUrl}/api/ramadan/confirm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reference: order.reference }),
+      })
+    } catch (e) {
+      console.error('Failed to confirm Ramadan sponsor:', e)
+    }
+    return NextResponse.json({ success: true })
+  }
+
   // Send voucher email to buyer
   const BREVO_API_KEY = process.env.BREVO_API_KEY
   const mosqueName = process.env.NEXT_PUBLIC_MOSQUE_NAME ?? 'Our Mosque'
