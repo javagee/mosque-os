@@ -156,6 +156,63 @@ export interface JemaahCheckIn {
   checked_in_at: string
 }
 
+// ── Events ────────────────────────────────────────────────────────────────────
+
+export interface MosqueEvent {
+  id: string
+  title: string
+  description?: string
+  date: string          // YYYY-MM-DD
+  time: string          // HH:MM (24h)
+  end_time?: string
+  venue?: string
+  capacity?: number
+  fee: number           // cents, 0 = free
+  registration_deadline?: string  // YYYY-MM-DD
+  active: boolean
+  created_at: string
+}
+
+export interface EventRegistration {
+  id: string
+  event_id: string
+  event_title: string
+  name: string
+  email: string
+  phone?: string
+  pax: number
+  status: 'confirmed' | 'cancelled'
+  created_at: string
+}
+
+// ── Facility Booking ──────────────────────────────────────────────────────────
+
+export interface Facility {
+  id: string
+  name: string
+  description?: string
+  capacity?: number
+  active: boolean
+  created_at: string
+}
+
+export interface FacilityBooking {
+  id: string
+  facility_id: string
+  facility_name: string
+  date: string          // YYYY-MM-DD
+  start_time: string    // HH:MM
+  end_time: string      // HH:MM
+  purpose: string
+  organizer_name: string
+  organizer_email: string
+  organizer_phone?: string
+  pax?: number
+  status: 'pending' | 'confirmed' | 'rejected'
+  admin_notes?: string
+  created_at: string
+}
+
 export interface Coupon {
   id: string
   token: string
