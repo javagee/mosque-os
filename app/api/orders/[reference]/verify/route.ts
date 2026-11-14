@@ -74,6 +74,19 @@ export async function POST(
     return NextResponse.json({ success: true })
   }
 
+  // If this is a Qurbani order, confirm the qurbani order
+  if (order.campaign_id?.startsWith('qurbani:')) {
+    try {
+      const { getAllQurbaniOrders, saveQurbaniOrder } = await import('@/lib/qurbani-store')
+      const allOrders = await getAllQurbaniOrders()
+      const qOrder = allOrders.find(o => o.order_reference === order.reference)
+      if (qOrder) await saveQurbaniOrder({ ...qOrder, status: 'confirmed' })
+    } catch (e) {
+      console.error('Failed to confirm Qurbani order:', e)
+    }
+    return NextResponse.json({ success: true })
+  }
+
   // Send voucher email to buyer
   const BREVO_API_KEY = process.env.BREVO_API_KEY
   const mosqueName = process.env.NEXT_PUBLIC_MOSQUE_NAME ?? 'Our Mosque'

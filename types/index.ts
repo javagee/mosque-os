@@ -264,6 +264,66 @@ export interface WaqfTransaction {
   created_at: string
 }
 
+// ── Qurbani (Udhiyah) ─────────────────────────────────────────────────────────
+
+export type QurbaniAnimalType = 'sheep' | 'goat' | 'cow_share' | 'cow_full' | 'buffalo_share' | 'buffalo_full'
+export type QurbaniNiyyah = 'self' | 'deceased' | 'family' | 'general'
+export type QurbaniOrderStatus = 'pending_payment' | 'confirmed' | 'slaughtered' | 'distributed' | 'cancelled'
+
+export interface QurbaniAnimalConfig {
+  type: QurbaniAnimalType
+  label: string
+  arabic: string
+  pax: number
+  price: number           // cents
+  capacity?: number
+}
+
+export interface QurbaniCampaign {
+  id: string              // QRB-XXXXXX
+  year: number
+  hijri_year?: string
+  eid_date: string        // YYYY-MM-DD
+  fulfilment_deadline: string
+  currency: string
+  animals: QurbaniAnimalConfig[]
+  active: boolean
+  created_at: string
+}
+
+export interface QurbaniOrder {
+  id: string              // QOR-XXXXXX
+  campaign_id: string
+  animal_type: QurbaniAnimalType
+  animal_label: string
+  niyyah: QurbaniNiyyah
+  niyyah_name?: string
+  donor_name: string
+  donor_email: string
+  donor_phone?: string
+  amount: number          // cents
+  currency: string
+  order_reference: string // IMA-XXXXXX
+  status: QurbaniOrderStatus
+  slaughter_date?: string
+  slaughter_location?: string
+  halal_cert_ref?: string
+  fulfilment_note?: string
+  created_at: string
+}
+
+export interface QurbaniPartner {
+  id: string              // QPT-XXXXXX
+  name: string
+  country?: string
+  address?: string
+  halal_cert_number?: string
+  capacity_per_day: number
+  animal_types: QurbaniAnimalType[]
+  active: boolean
+  created_at: string
+}
+
 export interface Coupon {
   id: string
   token: string
