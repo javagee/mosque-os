@@ -213,6 +213,57 @@ export interface FacilityBooking {
   created_at: string
 }
 
+// ── Waqf Asset Registry ───────────────────────────────────────────────────────
+
+export type WaqfAssetType = 'cash' | 'property' | 'sukuk' | 'other'
+export type WaqfAssetStatus = 'active' | 'suspended' | 'terminated'
+
+export interface WaqfAsset {
+  id: string                    // WAQ-XXXXXX
+  name: string
+  type: WaqfAssetType
+  description?: string
+  shariah_cert_ref?: string
+  registry_ref?: string         // waqf registry reference (any country)
+  currency: string              // ISO code: USD, GBP, SGD, JOD, SAR, AED, MYR…
+  country?: string              // e.g. "Jordan", "Global", "Singapore"
+  principal: number             // cents — locked, never disbursed
+  returns_available: number     // cents — spendable returns
+  returns_ytd: number           // cents
+  returns_lifetime: number      // cents
+  unit_price: number            // cents per share
+  status: WaqfAssetStatus
+  established_at: string        // YYYY-MM-DD
+  created_at: string
+}
+
+export interface WaqfShare {
+  id: string                    // SHR-XXXXXX
+  asset_id: string
+  asset_name: string
+  currency: string
+  donor_name: string
+  donor_email: string
+  shares: number
+  unit_price: number            // cents at time of purchase
+  total: number                 // cents
+  order_reference?: string      // IMA-XXXXXX PayNow order
+  status: 'pending' | 'confirmed'
+  created_at: string
+}
+
+export type WaqfTxType = 'contribution' | 'return_earned' | 'disbursement' | 'admin_fee'
+
+export interface WaqfTransaction {
+  id: string                    // WTX-XXXXXX
+  asset_id: string
+  type: WaqfTxType
+  amount: number                // cents (positive = in, negative = out for disbursement)
+  note?: string
+  created_by?: string
+  created_at: string
+}
+
 export interface Coupon {
   id: string
   token: string

@@ -28,6 +28,9 @@ export default function Nav({ mosqueName }: { mosqueName: string }) {
             <Link href="/facilities" className="px-3 py-2 rounded-lg text-sm text-green-200/70 hover:text-white hover:bg-white/10 transition-colors">
               Facilities
             </Link>
+            <Link href="/waqf" className="px-3 py-2 rounded-lg text-sm text-green-200/70 hover:text-white hover:bg-white/10 transition-colors">
+              Waqf
+            </Link>
             <Link href="/orders" className="px-3 py-2 rounded-lg text-sm text-green-200/70 hover:text-white hover:bg-white/10 transition-colors">
               Track Order
             </Link>
