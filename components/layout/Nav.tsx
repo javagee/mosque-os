@@ -16,6 +16,31 @@ export default function Nav({ mosqueName }: { mosqueName: string }) {
             <Link href="/campaigns" className="px-3 py-2 rounded-lg text-sm text-green-200/70 hover:text-white hover:bg-white/10 transition-colors">
               Campaigns
             </Link>
+
+            {/* Community dropdown */}
+            <div className="relative group">
+              <button className="px-3 py-2 rounded-lg text-sm text-green-200/70 hover:text-white hover:bg-white/10 transition-colors flex items-center gap-1">
+                Community
+                <svg className="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              <div className="absolute left-0 top-full pt-1 hidden group-hover:block z-50">
+                <div className="bg-[#1A3D2B] border border-white/10 rounded-xl shadow-xl py-1 min-w-[140px]">
+                  {[
+                    { href: '/ramadan', label: 'Ramadan' },
+                    { href: '/jemaah', label: 'Jemaah' },
+                    { href: '/events', label: 'Events' },
+                    { href: '/facilities', label: 'Facilities' },
+                  ].map(({ href, label }) => (
+                    <Link key={href} href={href} className="block px-4 py-2 text-sm text-green-200/70 hover:text-white hover:bg-white/10 transition-colors">
+                      {label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
+
             <Link href="/waqf" className="px-3 py-2 rounded-lg text-sm text-green-200/70 hover:text-white hover:bg-white/10 transition-colors">
               Waqf
             </Link>
