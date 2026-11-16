@@ -78,8 +78,15 @@ export default async function WaqfPage() {
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <span className="px-2 py-0.5 rounded-lg bg-[#1A3D2B]/10 text-[#1A3D2B] text-[10px] font-semibold">{lbl.en}</span>
                     <span className="arabic text-[#C9A84C] text-sm">{lbl.ar}</span>
+                    {asset.designation && (
+                      <span className={`px-2 py-0.5 rounded-lg text-[10px] font-semibold ${asset.designation === 'khas' ? 'bg-amber-100 text-amber-700' : 'bg-blue-50 text-blue-600'}`}>
+                        {asset.designation === 'khas' ? 'Khas' : 'Am'}
+                      </span>
+                    )}
+                    {asset.jurisdiction_code && <span className="px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 text-[10px] font-mono">{asset.jurisdiction_code}</span>}
                     {asset.country && <span className="text-[10px] text-gray-400">{asset.country}</span>}
                   </div>
+                  {asset.trustee_name && <p className="text-[10px] text-gray-400 mb-1">Trustee: {asset.trustee_name}</p>}
                   <h2 className="text-lg font-bold text-gray-900 mb-1">{asset.name}</h2>
                   {asset.description && <p className="text-sm text-gray-500 leading-relaxed">{asset.description}</p>}
                 </div>

@@ -20,7 +20,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const { name, type, description, shariah_cert_ref, registry_ref, currency, country, unit_price, established_at } = await req.json()
+  const { name, type, description, shariah_cert_ref, registry_ref, deed_ref, trustee_name, jurisdiction_code, designation, currency, country, unit_price, established_at } = await req.json()
 
   if (!name || !type || !unit_price || !established_at) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -30,9 +30,13 @@ export async function POST(req: NextRequest) {
     id: generateWaqfId(),
     name: name.trim(),
     type,
+    designation: designation || undefined,
     description: description?.trim(),
     shariah_cert_ref: shariah_cert_ref?.trim() || undefined,
     registry_ref: registry_ref?.trim() || undefined,
+    deed_ref: deed_ref?.trim() || undefined,
+    trustee_name: trustee_name?.trim() || undefined,
+    jurisdiction_code: jurisdiction_code?.trim() || undefined,
     currency: currency || 'USD',
     country: country?.trim() || undefined,
     principal: 0,

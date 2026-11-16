@@ -222,11 +222,15 @@ export interface WaqfAsset {
   id: string                    // WAQ-XXXXXX
   name: string
   type: WaqfAssetType
+  designation?: 'am' | 'khas'  // Am = general purpose; Khas = deed-restricted specific purpose (IAAS)
   description?: string
   shariah_cert_ref?: string
   registry_ref?: string         // waqf registry reference (any country)
+  deed_ref?: string             // governing deed / instrument reference
+  trustee_name?: string         // mutawalli / nazhir / appointed trustee name
+  jurisdiction_code?: string    // e.g. SG, MY-JHR, ID-BWI, JO, Global
   currency: string              // ISO code: USD, GBP, SGD, JOD, SAR, AED, MYR…
-  country?: string              // e.g. "Jordan", "Global", "Singapore"
+  country?: string              // human-readable country / region label
   principal: number             // cents — locked, never disbursed
   returns_available: number     // cents — spendable returns
   returns_ytd: number           // cents
@@ -260,6 +264,8 @@ export interface WaqfTransaction {
   type: WaqfTxType
   amount: number                // cents (positive = in, negative = out for disbursement)
   note?: string
+  jurisdiction_code?: string    // from asset at time of transaction (partial audit trail)
+  rule_note?: string            // approving authority / rule reference
   created_by?: string
   created_at: string
 }

@@ -25,6 +25,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     type: 'disbursement',
     amount: -cents,
     note: note.trim(),
+    jurisdiction_code: asset.jurisdiction_code,
     created_at: new Date().toISOString(),
   }
 

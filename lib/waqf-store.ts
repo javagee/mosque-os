@@ -119,20 +119,25 @@ export async function seedDemoData(): Promise<boolean> {
   const assets: WaqfAsset[] = [
     {
       id: generateWaqfId(), name: 'Global Education Waqf', type: 'cash', currency: 'USD', country: 'Global',
+      designation: 'am', jurisdiction_code: 'Global', trustee_name: 'Imara Foundation',
       description: 'Perpetual endowment supporting Islamic education scholarships worldwide for children of the ummah.',
       established_at: '2024-01-15', unit_price: 10000, principal: 2500000, returns_available: 125000,
       returns_ytd: 125000, returns_lifetime: 625000, status: 'active', created_at: now,
     },
     {
-      id: generateWaqfId(), name: 'Mosque Infrastructure Waqf', type: 'cash', currency: 'USD', country: 'Global',
-      description: 'Endowment for mosque construction, maintenance, and expansion to serve Muslim communities across the globe.',
+      id: generateWaqfId(), name: 'Mosque Infrastructure Waqf', type: 'cash', currency: 'USD', country: 'Singapore',
+      designation: 'khas', jurisdiction_code: 'SG', trustee_name: 'Al-Noor Mosque (MUIS Authorised)',
+      deed_ref: 'MUIS-DEED-2023-004', shariah_cert_ref: 'AAOIFI GS-13 Compliant',
+      description: 'Deed-restricted endowment for mosque construction, maintenance, and expansion under MUIS statutory oversight.',
       established_at: '2023-06-01', unit_price: 50000, principal: 10000000, returns_available: 500000,
       returns_ytd: 500000, returns_lifetime: 2000000, status: 'active', created_at: now,
     },
     {
       id: generateWaqfId(), name: 'Al-Quds Relief Waqf', type: 'cash', currency: 'JOD', country: 'Jordan',
-      description: 'Endowment dedicated to supporting families and communities in need across the Arab world.',
-      registry_ref: 'JAWF-2024-012', established_at: '2024-03-01', unit_price: 5000, principal: 1000000,
+      designation: 'khas', jurisdiction_code: 'JO', trustee_name: 'Jordan Awqaf Foundation',
+      deed_ref: 'JAWF-DEED-2024-012', registry_ref: 'JAWF-2024-012',
+      description: 'Deed-restricted endowment supporting families and communities in need across the Arab world. Registered with the Jordanian Awqaf Foundation.',
+      established_at: '2024-03-01', unit_price: 5000, principal: 1000000,
       returns_available: 45000, returns_ytd: 45000, returns_lifetime: 120000, status: 'active', created_at: now,
     },
   ]

@@ -32,7 +32,7 @@ export default function AdminWaqfPage() {
   // create form
   const [showCreate, setShowCreate] = useState(false)
   const [creating, setCreating] = useState(false)
-  const [form, setForm] = useState({ name: '', type: 'cash', description: '', currency: 'USD', country: '', unit_price: '', established_at: '', shariah_cert_ref: '', registry_ref: '' })
+  const [form, setForm] = useState({ name: '', type: 'cash', designation: 'am', description: '', currency: 'USD', country: '', jurisdiction_code: '', trustee_name: '', deed_ref: '', unit_price: '', established_at: '', shariah_cert_ref: '', registry_ref: '' })
 
   // per-asset action state
   const [returnForms, setReturnForms] = useState<Record<string, { amount: string; note: string }>>({})
@@ -62,9 +62,9 @@ export default function AdminWaqfPage() {
     const res = await fetch('/api/admin/waqf', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, unit_price: parseFloat(form.unit_price) }),
+      body: JSON.stringify({ ...form, unit_price: parseFloat(form.unit_price), designation: form.designation || undefined }),
     })
-    if (res.ok) { setShowCreate(false); setForm({ name: '', type: 'cash', description: '', currency: 'USD', country: '', unit_price: '', established_at: '', shariah_cert_ref: '', registry_ref: '' }); await load() }
+    if (res.ok) { setShowCreate(false); setForm({ name: '', type: 'cash', designation: 'am', description: '', currency: 'USD', country: '', jurisdiction_code: '', trustee_name: '', deed_ref: '', unit_price: '', established_at: '', shariah_cert_ref: '', registry_ref: '' }); await load() }
     setCreating(false)
   }
 
@@ -165,9 +165,33 @@ export default function AdminWaqfPage() {
                 </select>
               </div>
               <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Designation (Am/Khas) *</label>
+                <select value={form.designation} onChange={e => setForm(p => ({ ...p, designation: e.target.value }))} className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3D2B]/20">
+                  <option value="am">Am — General Purpose</option>
+                  <option value="khas">Khas — Deed-Restricted Specific Purpose</option>
+                </select>
+              </div>
+              <div>
                 <label className="block text-xs font-semibold text-gray-500 mb-1">Currency *</label>
                 <select value={form.currency} onChange={e => setForm(p => ({ ...p, currency: e.target.value }))} className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3D2B]/20">
                   {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Jurisdiction Code</label>
+                <select value={form.jurisdiction_code} onChange={e => setForm(p => ({ ...p, jurisdiction_code: e.target.value }))} className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3D2B]/20">
+                  <option value="">— Select jurisdiction —</option>
+                  <option value="SG">SG — Singapore (MUIS)</option>
+                  <option value="MY-JHR">MY-JHR — Malaysia, Johor</option>
+                  <option value="MY-KUL">MY-KUL — Malaysia, Kuala Lumpur</option>
+                  <option value="MY-SEL">MY-SEL — Malaysia, Selangor</option>
+                  <option value="MY-KED">MY-KED — Malaysia, Kedah</option>
+                  <option value="ID-BWI">ID-BWI — Indonesia (BWI)</option>
+                  <option value="JO">JO — Jordan (JAWF)</option>
+                  <option value="SA">SA — Saudi Arabia</option>
+                  <option value="AE">AE — United Arab Emirates</option>
+                  <option value="GB">GB — United Kingdom</option>
+                  <option value="Global">Global — Multi-jurisdiction</option>
                 </select>
               </div>
               <div>
@@ -182,13 +206,21 @@ export default function AdminWaqfPage() {
                 <label className="block text-xs font-semibold text-gray-500 mb-1">Country / Region</label>
                 <input value={form.country} onChange={e => setForm(p => ({ ...p, country: e.target.value }))} placeholder="e.g. Jordan, Global, Singapore" className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3D2B]/20"/>
               </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Trustee / Mutawalli / Nazhir</label>
+                <input value={form.trustee_name} onChange={e => setForm(p => ({ ...p, trustee_name: e.target.value }))} placeholder="e.g. MUIS, Jordan Awqaf Foundation, BWI" className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3D2B]/20"/>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Deed Reference</label>
+                <input value={form.deed_ref} onChange={e => setForm(p => ({ ...p, deed_ref: e.target.value }))} placeholder="e.g. MUIS-DEED-2024-001, JAWF-DEED-2024-012" className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3D2B]/20"/>
+              </div>
               <div className="sm:col-span-2">
                 <label className="block text-xs font-semibold text-gray-500 mb-1">Description</label>
                 <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={2} placeholder="Purpose and beneficiaries of this waqf" className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3D2B]/20 resize-none"/>
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-500 mb-1">Shariah Cert Ref</label>
-                <input value={form.shariah_cert_ref} onChange={e => setForm(p => ({ ...p, shariah_cert_ref: e.target.value }))} placeholder="e.g. AAOIFI, Fatwa Council, Shariah Board ref." className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3D2B]/20"/>
+                <input value={form.shariah_cert_ref} onChange={e => setForm(p => ({ ...p, shariah_cert_ref: e.target.value }))} placeholder="e.g. AAOIFI GS-13, Fatwa Council, Shariah Board ref." className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3D2B]/20"/>
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-500 mb-1">Registry Reference</label>
@@ -218,9 +250,21 @@ export default function AdminWaqfPage() {
                 <div>
                   <div className="flex items-center gap-2 flex-wrap mb-1">
                     <span className="px-2 py-0.5 rounded bg-white/10 text-white/60 text-[10px] font-semibold">{asset.type}</span>
+                    {asset.designation && (
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${asset.designation === 'khas' ? 'bg-amber-500/30 text-amber-300' : 'bg-blue-500/20 text-blue-200'}`}>
+                        {asset.designation === 'khas' ? 'Khas — Deed-Restricted' : 'Am — General Purpose'}
+                      </span>
+                    )}
+                    {asset.jurisdiction_code && <span className="px-2 py-0.5 rounded bg-white/10 text-white/50 text-[10px] font-mono">{asset.jurisdiction_code}</span>}
                     {asset.country && <span className="text-white/40 text-[10px]">{asset.country}</span>}
                     <span className="px-2 py-0.5 rounded bg-green-900/50 text-green-300 text-[10px] font-semibold">{asset.status}</span>
                   </div>
+                  {(asset.trustee_name || asset.deed_ref) && (
+                    <div className="flex flex-wrap gap-3 mt-1 mb-1">
+                      {asset.trustee_name && <p className="text-white/50 text-[10px]">Trustee: {asset.trustee_name}</p>}
+                      {asset.deed_ref && <p className="text-white/40 text-[10px] font-mono">Deed: {asset.deed_ref}</p>}
+                    </div>
+                  )}
                   <h2 className="text-white font-bold text-lg">{asset.name}</h2>
                 </div>
                 <div className="text-right flex-shrink-0">
