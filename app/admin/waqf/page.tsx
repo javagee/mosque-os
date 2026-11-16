@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import AdminSidebarLayout from '@/components/admin/AdminSidebarLayout'
-import type { WaqfAsset, WaqfShare, WaqfTransaction } from '@/types'
+import type { WaqfAsset, WaqfShare, WaqfTransaction, WaqfClaim } from '@/types'
 
 type AssetWithMeta = WaqfAsset & { confirmed_shareholders: number; pending_shares: WaqfShare[] }
 
@@ -39,6 +39,10 @@ export default function AdminWaqfPage() {
   // per-asset action state
   const [returnForms, setReturnForms] = useState<Record<string, { amount: string; note: string }>>({})
   const [disburseForms, setDisburseForms] = useState<Record<string, { amount: string; note: string; beneficiary_name: string; settlement_ref: string }>>({})
+  const [claimForms, setClaimForms] = useState<Record<string, { amount: string; purpose: string; beneficiary_name: string }>>({})
+  const [claimsByAsset, setClaimsByAsset] = useState<Record<string, WaqfClaim[]>>({})
+  const [settleRefs, setSettleRefs] = useState<Record<string, string>>({})
+  const [newClaimUrl, setNewClaimUrl] = useState<Record<string, string>>({})
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({})
 
   const load = useCallback(async () => {
@@ -46,13 +50,19 @@ export default function AdminWaqfPage() {
     if (!res.ok) return
     const data: AssetWithMeta[] = await res.json()
     setAssets(data)
-    // load transactions per asset
+    // load transactions + claims per asset
     const txMap: Record<string, WaqfTransaction[]> = {}
+    const claimMap: Record<string, WaqfClaim[]> = {}
     await Promise.all(data.map(async a => {
-      const r = await fetch(`/api/waqf/${a.id}`)
-      if (r.ok) { const d = await r.json(); txMap[a.id] = d.transactions ?? [] }
+      const [txRes, claimRes] = await Promise.all([
+        fetch(`/api/waqf/${a.id}`),
+        fetch(`/api/admin/waqf/${a.id}/claims`),
+      ])
+      if (txRes.ok) { const d = await txRes.json(); txMap[a.id] = d.transactions ?? [] }
+      if (claimRes.ok) { claimMap[a.id] = await claimRes.json() }
     }))
     setTxsByAsset(txMap)
+    setClaimsByAsset(claimMap)
     setLoading(false)
   }, [])
 
@@ -101,6 +111,41 @@ export default function AdminWaqfPage() {
     const res = await fetch(`/api/admin/waqf/${assetId}/disburse`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount: parseFloat(f.amount), note: f.note, beneficiary_name: f.beneficiary_name || undefined, settlement_ref: f.settlement_ref || undefined }) })
     if (res.ok) { setDisburseForms(p => ({ ...p, [assetId]: { amount: '', note: '', beneficiary_name: '', settlement_ref: '' } })); await load() }
     setActionLoading(p => ({ ...p, [`disburse-${assetId}`]: false }))
+  }
+
+  async function issueClaim(assetId: string) {
+    const f = claimForms[assetId]
+    if (!f?.amount || !f?.purpose) return
+    setActionLoading(p => ({ ...p, [`claim-${assetId}`]: true }))
+    const res = await fetch(`/api/admin/waqf/${assetId}/issue-claim`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount: parseFloat(f.amount), purpose: f.purpose, beneficiary_name: f.beneficiary_name || undefined }),
+    })
+    if (res.ok) {
+      const { claim } = await res.json()
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? window.location.origin
+      setNewClaimUrl(p => ({ ...p, [assetId]: `${appUrl}/waqf/claim/${claim.id}` }))
+      setClaimForms(p => ({ ...p, [assetId]: { amount: '', purpose: '', beneficiary_name: '' } }))
+      await load()
+    }
+    setActionLoading(p => ({ ...p, [`claim-${assetId}`]: false }))
+  }
+
+  async function settleClaim(token: string) {
+    const ref = settleRefs[token]
+    if (!ref?.trim()) return
+    setActionLoading(p => ({ ...p, [`settle-${token}`]: true }))
+    const res = await fetch(`/api/admin/waqf/claims/${token}/settle`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ settlement_ref: ref }),
+    })
+    if (res.ok) {
+      setSettleRefs(p => ({ ...p, [token]: '' }))
+      await load()
+    }
+    setActionLoading(p => ({ ...p, [`settle-${token}`]: false }))
   }
 
   const totalPrincipal = assets.filter(a => a.currency === 'USD').reduce((s, a) => s + a.principal, 0)
@@ -250,6 +295,9 @@ export default function AdminWaqfPage() {
         ) : assets.map(asset => {
           const rf = returnForms[asset.id] ?? { amount: '', note: '' }
           const df = disburseForms[asset.id] ?? { amount: '', note: '', beneficiary_name: '', settlement_ref: '' }
+          const cf = claimForms[asset.id] ?? { amount: '', purpose: '', beneficiary_name: '' }
+          const claims = claimsByAsset[asset.id] ?? []
+          const appUrl = typeof window !== 'undefined' ? (process.env.NEXT_PUBLIC_APP_URL ?? window.location.origin) : ''
           const txs = txsByAsset[asset.id] ?? []
 
           return (
@@ -329,7 +377,7 @@ export default function AdminWaqfPage() {
                 )}
 
                 {/* Actions row */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {/* Record Return */}
                   <div className="bg-blue-50 rounded-xl p-4 space-y-2">
                     <p className="text-xs font-semibold text-blue-700">Record Return Earned</p>
@@ -342,9 +390,9 @@ export default function AdminWaqfPage() {
                     </div>
                   </div>
 
-                  {/* Disburse */}
+                  {/* Disburse (direct, no QR) */}
                   <div className="bg-amber-50 rounded-xl p-4 space-y-2">
-                    <p className="text-xs font-semibold text-amber-700">Disburse Returns — Route A</p>
+                    <p className="text-xs font-semibold text-amber-700">Direct Disburse (no QR)</p>
                     <div className="flex gap-2 flex-wrap">
                       <input type="number" min="0.01" step="0.01" value={df.amount} onChange={e => setDisburseForms(p => ({ ...p, [asset.id]: { ...df, amount: e.target.value } }))} placeholder={`Amount (${asset.currency})`} className="flex-1 min-w-[100px] px-2.5 py-1.5 rounded-lg border border-amber-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-200"/>
                       <input required value={df.note} onChange={e => setDisburseForms(p => ({ ...p, [asset.id]: { ...df, note: e.target.value } }))} placeholder="Purpose *" className="flex-1 min-w-[120px] px-2.5 py-1.5 rounded-lg border border-amber-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-200"/>
@@ -355,7 +403,82 @@ export default function AdminWaqfPage() {
                       </button>
                     </div>
                   </div>
+                  {/* Issue Claim QR */}
+                  <div className="bg-teal-50 rounded-xl p-4 space-y-2">
+                    <p className="text-xs font-semibold text-teal-700">Issue Claim QR (IAAS)</p>
+                    <div className="space-y-1.5">
+                      <input type="number" min="0.01" step="0.01" value={cf.amount} onChange={e => setClaimForms(p => ({ ...p, [asset.id]: { ...cf, amount: e.target.value } }))} placeholder={`Amount (${asset.currency})`} className="w-full px-2.5 py-1.5 rounded-lg border border-teal-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-200"/>
+                      <input value={cf.purpose} onChange={e => setClaimForms(p => ({ ...p, [asset.id]: { ...cf, purpose: e.target.value } }))} placeholder="Purpose *" className="w-full px-2.5 py-1.5 rounded-lg border border-teal-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-200"/>
+                      <input value={cf.beneficiary_name} onChange={e => setClaimForms(p => ({ ...p, [asset.id]: { ...cf, beneficiary_name: e.target.value } }))} placeholder="Beneficiary name" className="w-full px-2.5 py-1.5 rounded-lg border border-teal-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-200"/>
+                      <button onClick={() => issueClaim(asset.id)} disabled={!cf.amount || !cf.purpose || actionLoading[`claim-${asset.id}`]} className="w-full px-3 py-1.5 rounded-lg bg-teal-600 text-white text-xs font-semibold hover:bg-teal-700 disabled:opacity-40 transition-colors">
+                        {actionLoading[`claim-${asset.id}`] ? '…' : 'Issue Claim QR'}
+                      </button>
+                    </div>
+                    {newClaimUrl[asset.id] && (
+                      <div className="mt-2 bg-white rounded-lg border border-teal-200 p-2 space-y-1">
+                        <p className="text-[10px] font-semibold text-teal-700">Claim issued — share this link:</p>
+                        <p className="text-[10px] font-mono text-teal-600 break-all">{newClaimUrl[asset.id]}</p>
+                        <div className="flex gap-1.5">
+                          <button onClick={() => { navigator.clipboard.writeText(newClaimUrl[asset.id]); }} className="px-2 py-1 rounded bg-teal-100 text-teal-700 text-[10px] font-semibold hover:bg-teal-200 transition-colors">Copy</button>
+                          <a href={newClaimUrl[asset.id]} target="_blank" rel="noopener noreferrer" className="px-2 py-1 rounded bg-teal-100 text-teal-700 text-[10px] font-semibold hover:bg-teal-200 transition-colors">Open →</a>
+                          <button onClick={() => setNewClaimUrl(p => ({ ...p, [asset.id]: '' }))} className="px-2 py-1 rounded bg-gray-100 text-gray-500 text-[10px] hover:bg-gray-200 transition-colors">Dismiss</button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
+
+                {/* Claims section */}
+                {claims.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-gray-400 mb-2">Claim QR Vouchers ({claims.length})</p>
+                    <div className="space-y-2">
+                      {claims.map(c => {
+                        const statusColor = { pending: 'bg-teal-100 text-teal-700', redeemed: 'bg-amber-100 text-amber-700', settled: 'bg-green-100 text-green-700', expired: 'bg-gray-100 text-gray-400' }[c.status] ?? 'bg-gray-100 text-gray-500'
+                        return (
+                          <div key={c.id} className="bg-gray-50 rounded-xl px-3 py-2.5 space-y-1.5">
+                            <div className="flex items-center justify-between gap-3 flex-wrap">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${statusColor}`}>{c.status}</span>
+                                <span className="font-mono text-[10px] text-gray-400">{c.id}</span>
+                                {c.beneficiary_name && <span className="text-xs text-gray-600">→ {c.beneficiary_name}</span>}
+                              </div>
+                              <span className="font-semibold text-sm text-amber-600">{fmt(c.amount, c.currency)}</span>
+                            </div>
+                            <p className="text-xs text-gray-500">{c.purpose}</p>
+                            <div className="flex flex-wrap gap-3 text-[10px] text-gray-400">
+                              {c.redeemed_by && <span>Redeemed by: {c.redeemed_by}</span>}
+                              {c.invoice_ref && <span>Invoice: {c.invoice_ref}</span>}
+                              {c.settlement_ref && <span className="font-mono">Settlement: {c.settlement_ref}</span>}
+                            </div>
+                            {/* Settle button for redeemed claims */}
+                            {c.status === 'redeemed' && (
+                              <div className="flex gap-1.5 mt-1">
+                                <input
+                                  value={settleRefs[c.id] ?? ''}
+                                  onChange={e => setSettleRefs(p => ({ ...p, [c.id]: e.target.value }))}
+                                  placeholder="Bank / custodian settlement ref *"
+                                  className="flex-1 px-2 py-1 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-1 focus:ring-[#1A3D2B]/20"
+                                />
+                                <button
+                                  onClick={() => settleClaim(c.id)}
+                                  disabled={!settleRefs[c.id]?.trim() || actionLoading[`settle-${c.id}`]}
+                                  className="px-3 py-1 rounded-lg bg-green-600 text-white text-xs font-semibold hover:bg-green-700 disabled:opacity-40 transition-colors"
+                                >
+                                  {actionLoading[`settle-${c.id}`] ? '…' : 'Mark Settled'}
+                                </button>
+                                <a href={`/waqf/claim/${c.id}`} target="_blank" rel="noopener noreferrer" className="px-2 py-1 rounded-lg border border-gray-200 text-xs text-gray-500 hover:border-gray-400 transition-colors">View QR</a>
+                              </div>
+                            )}
+                            {c.status === 'pending' && (
+                              <a href={`/waqf/claim/${c.id}`} target="_blank" rel="noopener noreferrer" className="inline-block text-[10px] text-teal-600 hover:underline">View claim QR →</a>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {/* Transaction history */}
                 {txs.length > 0 && (

@@ -274,6 +274,29 @@ export interface WaqfTransaction {
   created_at: string
 }
 
+// ── Waqf Claim QR Vouchers ────────────────────────────────────────────────────
+
+export type WaqfClaimStatus = 'pending' | 'redeemed' | 'settled' | 'expired'
+
+export interface WaqfClaim {
+  id: string              // CLM-XXXXXX (also the token)
+  asset_id: string
+  asset_name: string
+  tx_id: string           // linked WaqfTransaction (disbursement)
+  beneficiary_name?: string
+  amount: number          // cents — deducted from returns_available at issue time
+  currency: string
+  purpose: string
+  jurisdiction_code?: string
+  status: WaqfClaimStatus
+  issued_at: string
+  redeemed_at?: string
+  redeemed_by?: string    // merchant outlet name
+  invoice_ref?: string    // merchant invoice reference
+  settlement_ref?: string // custodian/bank reference (admin adds after transfer)
+  settled_at?: string
+}
+
 // ── Beneficiary / Asnaf Registry ─────────────────────────────────────────────
 
 export type AsnafCategory =
