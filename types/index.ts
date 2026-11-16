@@ -274,6 +274,49 @@ export interface WaqfTransaction {
   created_at: string
 }
 
+// ── Beneficiary / Asnaf Registry ─────────────────────────────────────────────
+
+export type AsnafCategory =
+  | 'fakir'          // destitute — no income, no assets
+  | 'miskin'         // poor — insufficient income
+  | 'amil'           // zakat collector / administrator
+  | 'muallaf'        // new Muslim or whose heart is being won
+  | 'riqab'          // freeing from bondage (historical)
+  | 'gharimin'       // the indebted
+  | 'fi_sabilillah'  // in the path of Allah — education, da'wah
+  | 'ibnu_sabil'     // stranded traveller
+  | 'general'        // non-asnaf — sadaqah/waqf income only, not zakat
+
+export type BeneficiaryStatus = 'active' | 'inactive' | 'pending_review'
+
+export interface Beneficiary {
+  id: string                    // BNF-XXXXXX
+  name: string
+  ic_ref?: string               // last 4 of IC/passport only (privacy)
+  phone?: string
+  email?: string
+  asnaf_category: AsnafCategory
+  zakat_eligible: boolean       // true for all asnaf except 'general'
+  jurisdiction_code?: string    // SG, MY-JHR, ID-BWI, etc.
+  case_ref?: string             // internal case/file reference
+  notes?: string
+  status: BeneficiaryStatus
+  created_at: string
+  updated_at?: string
+}
+
+export const ASNAF_META: Record<AsnafCategory, { label: string; arabic: string; zakat: boolean; color: string }> = {
+  fakir:         { label: 'Fakir',         arabic: 'فقير',       zakat: true,  color: 'bg-red-100 text-red-700' },
+  miskin:        { label: 'Miskin',        arabic: 'مسكين',      zakat: true,  color: 'bg-orange-100 text-orange-700' },
+  amil:          { label: 'Amil',          arabic: 'عامل',       zakat: true,  color: 'bg-blue-100 text-blue-700' },
+  muallaf:       { label: 'Muallaf',       arabic: 'مؤلفة',      zakat: true,  color: 'bg-teal-100 text-teal-700' },
+  riqab:         { label: 'Riqab',         arabic: 'رقاب',       zakat: true,  color: 'bg-slate-100 text-slate-600' },
+  gharimin:      { label: 'Gharimin',      arabic: 'غارمين',     zakat: true,  color: 'bg-amber-100 text-amber-700' },
+  fi_sabilillah: { label: 'Fi Sabilillah', arabic: 'في سبيل الله', zakat: true, color: 'bg-green-100 text-green-700' },
+  ibnu_sabil:    { label: 'Ibnu Sabil',    arabic: 'ابن السبيل', zakat: true,  color: 'bg-indigo-100 text-indigo-700' },
+  general:       { label: 'General',       arabic: 'عام',        zakat: false, color: 'bg-gray-100 text-gray-600' },
+}
+
 // ── Qurbani (Udhiyah) ─────────────────────────────────────────────────────────
 
 export type QurbaniAnimalType = 'sheep' | 'goat' | 'cow_share' | 'cow_full' | 'buffalo_share' | 'buffalo_full'
