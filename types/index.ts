@@ -222,6 +222,7 @@ export interface WaqfAsset {
   id: string                    // WAQ-XXXXXX
   name: string
   type: WaqfAssetType
+  waqf_mode?: 'income' | 'asset'  // income = Route A (returns distributed); asset = Route B (capital → registered asset)
   designation?: 'am' | 'khas'  // Am = general purpose; Khas = deed-restricted specific purpose (IAAS)
   description?: string
   shariah_cert_ref?: string
@@ -256,7 +257,7 @@ export interface WaqfShare {
   created_at: string
 }
 
-export type WaqfTxType = 'contribution' | 'return_earned' | 'disbursement' | 'admin_fee'
+export type WaqfTxType = 'contribution' | 'return_earned' | 'disbursement' | 'admin_fee' | 'asset_acquisition' | 'asset_registered'
 
 export interface WaqfTransaction {
   id: string                    // WTX-XXXXXX
@@ -266,6 +267,9 @@ export interface WaqfTransaction {
   note?: string
   jurisdiction_code?: string    // from asset at time of transaction (partial audit trail)
   rule_note?: string            // approving authority / rule reference
+  beneficiary_name?: string     // named beneficiary or recipient (Ghazali Route A)
+  settlement_ref?: string       // custodian/bank external reference (required for IAAS settlement)
+  asset_registry_ref?: string   // waqf asset registry reference (Ghazali Route B — asset acquisition)
   created_by?: string
   created_at: string
 }

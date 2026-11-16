@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const { amount, note } = await req.json()
+  const { amount, note, beneficiary_name, settlement_ref, asset_registry_ref } = await req.json()
   if (!amount || amount <= 0) return NextResponse.json({ error: 'Invalid amount' }, { status: 400 })
   if (!note?.trim()) return NextResponse.json({ error: 'Note required for disbursement' }, { status: 400 })
 
@@ -26,6 +26,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     amount: -cents,
     note: note.trim(),
     jurisdiction_code: asset.jurisdiction_code,
+    beneficiary_name: beneficiary_name?.trim() || undefined,
+    settlement_ref: settlement_ref?.trim() || undefined,
+    asset_registry_ref: asset_registry_ref?.trim() || undefined,
     created_at: new Date().toISOString(),
   }
 

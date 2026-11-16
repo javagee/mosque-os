@@ -15,10 +15,12 @@ function fmt(amount: number, currency: string) {
 }
 
 const TX_COLORS: Record<string, string> = {
-  contribution:  'bg-green-100 text-green-700',
-  return_earned: 'bg-blue-100 text-blue-700',
-  disbursement:  'bg-amber-100 text-amber-700',
-  admin_fee:     'bg-gray-100 text-gray-500',
+  contribution:      'bg-green-100 text-green-700',
+  return_earned:     'bg-blue-100 text-blue-700',
+  disbursement:      'bg-amber-100 text-amber-700',
+  admin_fee:         'bg-gray-100 text-gray-500',
+  asset_acquisition: 'bg-purple-100 text-purple-700',
+  asset_registered:  'bg-indigo-100 text-indigo-700',
 }
 
 const CURRENCIES = ['USD', 'GBP', 'EUR', 'SGD', 'SAR', 'AED', 'JOD', 'MYR']
@@ -32,11 +34,11 @@ export default function AdminWaqfPage() {
   // create form
   const [showCreate, setShowCreate] = useState(false)
   const [creating, setCreating] = useState(false)
-  const [form, setForm] = useState({ name: '', type: 'cash', designation: 'am', description: '', currency: 'USD', country: '', jurisdiction_code: '', trustee_name: '', deed_ref: '', unit_price: '', established_at: '', shariah_cert_ref: '', registry_ref: '' })
+  const [form, setForm] = useState({ name: '', type: 'cash', waqf_mode: 'income', designation: 'am', description: '', currency: 'USD', country: '', jurisdiction_code: '', trustee_name: '', deed_ref: '', unit_price: '', established_at: '', shariah_cert_ref: '', registry_ref: '' })
 
   // per-asset action state
   const [returnForms, setReturnForms] = useState<Record<string, { amount: string; note: string }>>({})
-  const [disburseForms, setDisburseForms] = useState<Record<string, { amount: string; note: string }>>({})
+  const [disburseForms, setDisburseForms] = useState<Record<string, { amount: string; note: string; beneficiary_name: string; settlement_ref: string }>>({})
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({})
 
   const load = useCallback(async () => {
@@ -64,7 +66,7 @@ export default function AdminWaqfPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...form, unit_price: parseFloat(form.unit_price), designation: form.designation || undefined }),
     })
-    if (res.ok) { setShowCreate(false); setForm({ name: '', type: 'cash', designation: 'am', description: '', currency: 'USD', country: '', jurisdiction_code: '', trustee_name: '', deed_ref: '', unit_price: '', established_at: '', shariah_cert_ref: '', registry_ref: '' }); await load() }
+    if (res.ok) { setShowCreate(false); setForm({ name: '', type: 'cash', waqf_mode: 'income', designation: 'am', description: '', currency: 'USD', country: '', jurisdiction_code: '', trustee_name: '', deed_ref: '', unit_price: '', established_at: '', shariah_cert_ref: '', registry_ref: '' }); await load() }
     setCreating(false)
   }
 
@@ -96,8 +98,8 @@ export default function AdminWaqfPage() {
     const f = disburseForms[assetId]
     if (!f?.amount || !f?.note) return
     setActionLoading(p => ({ ...p, [`disburse-${assetId}`]: true }))
-    const res = await fetch(`/api/admin/waqf/${assetId}/disburse`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount: parseFloat(f.amount), note: f.note }) })
-    if (res.ok) { setDisburseForms(p => ({ ...p, [assetId]: { amount: '', note: '' } })); await load() }
+    const res = await fetch(`/api/admin/waqf/${assetId}/disburse`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount: parseFloat(f.amount), note: f.note, beneficiary_name: f.beneficiary_name || undefined, settlement_ref: f.settlement_ref || undefined }) })
+    if (res.ok) { setDisburseForms(p => ({ ...p, [assetId]: { amount: '', note: '', beneficiary_name: '', settlement_ref: '' } })); await load() }
     setActionLoading(p => ({ ...p, [`disburse-${assetId}`]: false }))
   }
 
@@ -172,6 +174,13 @@ export default function AdminWaqfPage() {
                 </select>
               </div>
               <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Waqf Mode</label>
+                <select value={form.waqf_mode} onChange={e => setForm(p => ({ ...p, waqf_mode: e.target.value }))} className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3D2B]/20">
+                  <option value="income">Route A — Income Distribution (returns to beneficiaries)</option>
+                  <option value="asset">Route B — Asset Acquisition (capital converts to registered asset)</option>
+                </select>
+              </div>
+              <div>
                 <label className="block text-xs font-semibold text-gray-500 mb-1">Currency *</label>
                 <select value={form.currency} onChange={e => setForm(p => ({ ...p, currency: e.target.value }))} className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3D2B]/20">
                   {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
@@ -240,7 +249,7 @@ export default function AdminWaqfPage() {
           <div className="text-center py-16 text-gray-400 text-sm">No waqf programmes yet. Click &quot;Seed Demo Data&quot; to populate for the demo.</div>
         ) : assets.map(asset => {
           const rf = returnForms[asset.id] ?? { amount: '', note: '' }
-          const df = disburseForms[asset.id] ?? { amount: '', note: '' }
+          const df = disburseForms[asset.id] ?? { amount: '', note: '', beneficiary_name: '', settlement_ref: '' }
           const txs = txsByAsset[asset.id] ?? []
 
           return (
@@ -253,6 +262,11 @@ export default function AdminWaqfPage() {
                     {asset.designation && (
                       <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${asset.designation === 'khas' ? 'bg-amber-500/30 text-amber-300' : 'bg-blue-500/20 text-blue-200'}`}>
                         {asset.designation === 'khas' ? 'Khas — Deed-Restricted' : 'Am — General Purpose'}
+                      </span>
+                    )}
+                    {asset.waqf_mode && (
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${asset.waqf_mode === 'asset' ? 'bg-purple-500/30 text-purple-200' : 'bg-teal-500/20 text-teal-200'}`}>
+                        {asset.waqf_mode === 'asset' ? 'Route B · Asset' : 'Route A · Income'}
                       </span>
                     )}
                     {asset.jurisdiction_code && <span className="px-2 py-0.5 rounded bg-white/10 text-white/50 text-[10px] font-mono">{asset.jurisdiction_code}</span>}
@@ -330,10 +344,12 @@ export default function AdminWaqfPage() {
 
                   {/* Disburse */}
                   <div className="bg-amber-50 rounded-xl p-4 space-y-2">
-                    <p className="text-xs font-semibold text-amber-700">Disburse Returns</p>
-                    <div className="flex gap-2">
-                      <input type="number" min="0.01" step="0.01" value={df.amount} onChange={e => setDisburseForms(p => ({ ...p, [asset.id]: { ...df, amount: e.target.value } }))} placeholder={`Amount (${asset.currency})`} className="flex-1 px-2.5 py-1.5 rounded-lg border border-amber-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-200"/>
-                      <input required value={df.note} onChange={e => setDisburseForms(p => ({ ...p, [asset.id]: { ...df, note: e.target.value } }))} placeholder="Purpose *" className="flex-1 px-2.5 py-1.5 rounded-lg border border-amber-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-200"/>
+                    <p className="text-xs font-semibold text-amber-700">Disburse Returns — Route A</p>
+                    <div className="flex gap-2 flex-wrap">
+                      <input type="number" min="0.01" step="0.01" value={df.amount} onChange={e => setDisburseForms(p => ({ ...p, [asset.id]: { ...df, amount: e.target.value } }))} placeholder={`Amount (${asset.currency})`} className="flex-1 min-w-[100px] px-2.5 py-1.5 rounded-lg border border-amber-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-200"/>
+                      <input required value={df.note} onChange={e => setDisburseForms(p => ({ ...p, [asset.id]: { ...df, note: e.target.value } }))} placeholder="Purpose *" className="flex-1 min-w-[120px] px-2.5 py-1.5 rounded-lg border border-amber-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-200"/>
+                      <input value={df.beneficiary_name} onChange={e => setDisburseForms(p => ({ ...p, [asset.id]: { ...df, beneficiary_name: e.target.value } }))} placeholder="Beneficiary name" className="flex-1 min-w-[120px] px-2.5 py-1.5 rounded-lg border border-amber-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-200"/>
+                      <input value={df.settlement_ref} onChange={e => setDisburseForms(p => ({ ...p, [asset.id]: { ...df, settlement_ref: e.target.value } }))} placeholder="Settlement ref (bank/custodian)" className="flex-1 min-w-[150px] px-2.5 py-1.5 rounded-lg border border-amber-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-200"/>
                       <button onClick={() => disburse(asset.id)} disabled={!df.amount || !df.note || actionLoading[`disburse-${asset.id}`]} className="px-3 py-1.5 rounded-lg bg-amber-600 text-white text-xs font-semibold hover:bg-amber-700 disabled:opacity-40 transition-colors">
                         {actionLoading[`disburse-${asset.id}`] ? '…' : 'Disburse'}
                       </button>
@@ -348,9 +364,11 @@ export default function AdminWaqfPage() {
                     <div className="space-y-1.5">
                       {txs.slice(0, 8).map(tx => (
                         <div key={tx.id} className="flex items-center justify-between text-sm bg-gray-50 rounded-lg px-3 py-2">
-                          <div className="flex items-center gap-2">
-                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${TX_COLORS[tx.type] ?? 'bg-gray-100 text-gray-500'}`}>{tx.type.replace('_', ' ')}</span>
-                            {tx.note && <span className="text-xs text-gray-500 truncate max-w-[200px]">{tx.note}</span>}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${TX_COLORS[tx.type] ?? 'bg-gray-100 text-gray-500'}`}>{tx.type.replace(/_/g, ' ')}</span>
+                            {tx.note && <span className="text-xs text-gray-500 truncate max-w-[180px]">{tx.note}</span>}
+                            {tx.beneficiary_name && <span className="text-[10px] text-gray-400">→ {tx.beneficiary_name}</span>}
+                            {tx.settlement_ref && <span className="text-[10px] font-mono text-gray-400">ref: {tx.settlement_ref}</span>}
                           </div>
                           <span className={`font-semibold text-sm ${tx.amount < 0 ? 'text-amber-600' : 'text-green-600'}`}>
                             {tx.amount < 0 ? '-' : '+'}{fmt(Math.abs(tx.amount), asset.currency)}
