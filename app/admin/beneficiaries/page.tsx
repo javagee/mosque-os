@@ -87,7 +87,7 @@ export default function BeneficiariesPage() {
 
   return (
     <AdminSidebarLayout mosqueName={process.env.NEXT_PUBLIC_MOSQUE_NAME}>
-      <div className="p-6 space-y-6 max-w-5xl">
+      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 max-w-5xl">
 
         {/* Header */}
         <div className="flex items-start justify-between gap-4 flex-wrap">

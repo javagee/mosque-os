@@ -142,7 +142,7 @@ export default function AdminSadaqahPage() {
 
   return (
     <AdminSidebarLayout mosqueName={process.env.NEXT_PUBLIC_MOSQUE_NAME}>
-      <div className="p-6 space-y-6 max-w-5xl">
+      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 max-w-5xl">
 
         {/* Header */}
         <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -256,7 +256,7 @@ export default function AdminSadaqahPage() {
                       </div>
                     </div>
                     <div className="p-5 space-y-4">
-                      <div className="grid grid-cols-3 gap-3">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                         {[
                           { label: 'Total Received', value: fmt(fund.received_total, fund.currency) },
                           { label: 'Total Disbursed', value: fmt(fund.disbursed_total, fund.currency) },
