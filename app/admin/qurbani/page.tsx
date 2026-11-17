@@ -44,6 +44,8 @@ export default function AdminQurbaniPage() {
   const [orderEdits, setOrderEdits] = useState<Partial<QurbaniOrder & { status: QurbaniOrderStatus }>>({})
   const [notifying, setNotifying] = useState<string | null>(null)
   const [notified, setNotified] = useState<Record<string, boolean>>({})
+  const [notifyingAll, setNotifyingAll] = useState(false)
+  const [notifyAllResult, setNotifyAllResult] = useState<string | null>(null)
 
   // Add partner form
   const [showAddPartner, setShowAddPartner] = useState(false)
@@ -110,6 +112,20 @@ export default function AdminQurbaniPage() {
     const res = await fetch(`/api/admin/qurbani/orders/${id}/notify`, { method: 'POST' })
     if (res.ok) setNotified(p => ({ ...p, [id]: true }))
     setNotifying(null)
+  }
+
+  async function notifyAll() {
+    const targets = orders.filter(o => o.status === 'distributed' || o.status === 'slaughtered')
+    if (!targets.length) return
+    setNotifyingAll(true)
+    setNotifyAllResult(null)
+    const results = await Promise.all(targets.map(o =>
+      fetch(`/api/admin/qurbani/orders/${o.id}/notify`, { method: 'POST' }).then(r => r.ok)
+    ))
+    const sent = results.filter(Boolean).length
+    setNotified(p => Object.fromEntries([...Object.entries(p), ...targets.map(o => [o.id, true])]))
+    setNotifyAllResult(`✓ Sent to ${sent} of ${targets.length}`)
+    setNotifyingAll(false)
   }
 
   async function addPartner(e: React.FormEvent) {
@@ -253,7 +269,18 @@ export default function AdminQurbaniPage() {
 
         {/* Orders */}
         <section>
-          <h2 className="text-base font-semibold text-gray-700 mb-3">Orders</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-semibold text-gray-700">Orders</h2>
+            {orders.some(o => o.status === 'distributed' || o.status === 'slaughtered') && (
+              <div className="flex items-center gap-2">
+                {notifyAllResult && <span className="text-xs text-green-600 font-semibold">{notifyAllResult}</span>}
+                <button onClick={notifyAll} disabled={notifyingAll}
+                  className="px-3 py-1.5 rounded-lg bg-teal-600 text-white text-xs font-semibold hover:bg-teal-700 disabled:opacity-50 transition-colors">
+                  {notifyingAll ? 'Sending…' : 'Notify All'}
+                </button>
+              </div>
+            )}
+          </div>
           <div className="grid grid-cols-5 gap-3 mb-4">
             {[
               { label: 'Total', value: stats.total, color: 'text-gray-800' },
