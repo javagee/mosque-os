@@ -274,6 +274,59 @@ export interface WaqfTransaction {
   created_at: string
 }
 
+// ── Sadaqah Fund Journey ──────────────────────────────────────────────────────
+
+export interface SadaqahFund {
+  id: string              // SAF-XXXXXX
+  name: string
+  description?: string
+  currency: string
+  purpose_tag?: string    // optional label (e.g. "Food Aid", "Medical", "Education")
+  balance: number         // cents — available to allocate
+  received_total: number  // cents — lifetime receipts
+  disbursed_total: number // cents — lifetime disbursements
+  status: 'active' | 'closed'
+  created_at: string
+}
+
+export type SadaqahAllocationStatus = 'pending' | 'approved' | 'claimed' | 'settled'
+
+export interface SadaqahAllocation {
+  id: string              // SAL-XXXXXX
+  fund_id: string
+  fund_name: string
+  amount: number          // cents
+  currency: string
+  purpose: string
+  beneficiary_name?: string
+  beneficiary_id?: string // BNF-XXXXXX from registry
+  status: SadaqahAllocationStatus
+  claim_id?: string       // SDQ-XXXXXX when claim issued
+  settlement_ref?: string
+  approved_at?: string
+  created_at: string
+}
+
+export type SadaqahClaimStatus = 'pending' | 'redeemed' | 'settled' | 'expired'
+
+export interface SadaqahClaim {
+  id: string              // SDQ-XXXXXX
+  fund_id: string
+  fund_name: string
+  allocation_id: string
+  beneficiary_name?: string
+  amount: number
+  currency: string
+  purpose: string
+  status: SadaqahClaimStatus
+  issued_at: string
+  redeemed_at?: string
+  redeemed_by?: string
+  invoice_ref?: string
+  settlement_ref?: string
+  settled_at?: string
+}
+
 // ── Waqf Claim QR Vouchers ────────────────────────────────────────────────────
 
 export type WaqfClaimStatus = 'pending' | 'redeemed' | 'settled' | 'expired'
