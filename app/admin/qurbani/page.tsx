@@ -42,6 +42,8 @@ export default function AdminQurbaniPage() {
   // Update order inline
   const [editingOrder, setEditingOrder] = useState<string | null>(null)
   const [orderEdits, setOrderEdits] = useState<Partial<QurbaniOrder & { status: QurbaniOrderStatus }>>({})
+  const [notifying, setNotifying] = useState<string | null>(null)
+  const [notified, setNotified] = useState<Record<string, boolean>>({})
 
   // Add partner form
   const [showAddPartner, setShowAddPartner] = useState(false)
@@ -101,6 +103,13 @@ export default function AdminQurbaniPage() {
     setEditingOrder(null)
     setOrderEdits({})
     await load()
+  }
+
+  async function sendNotification(id: string) {
+    setNotifying(id)
+    const res = await fetch(`/api/admin/qurbani/orders/${id}/notify`, { method: 'POST' })
+    if (res.ok) setNotified(p => ({ ...p, [id]: true }))
+    setNotifying(null)
   }
 
   async function addPartner(e: React.FormEvent) {
@@ -292,10 +301,21 @@ export default function AdminQurbaniPage() {
                           <span className={`px-2 py-0.5 rounded-lg text-xs font-semibold ${STATUS_COLORS[o.status]}`}>{o.status.replace('_', ' ')}</span>
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <button onClick={() => { setEditingOrder(editingOrder === o.id ? null : o.id); setOrderEdits({ status: o.status, slaughter_date: o.slaughter_date, slaughter_location: o.slaughter_location, halal_cert_ref: o.halal_cert_ref, fulfilment_note: o.fulfilment_note }) }}
-                            className="text-xs text-[#1A3D2B] font-semibold hover:underline">
-                            {editingOrder === o.id ? 'Cancel' : 'Update'}
-                          </button>
+                          <div className="flex items-center justify-end gap-3">
+                            {(o.status === 'slaughtered' || o.status === 'distributed') && (
+                              <button
+                                onClick={() => sendNotification(o.id)}
+                                disabled={notifying === o.id}
+                                className={`text-xs font-semibold transition-colors ${notified[o.id] ? 'text-green-600' : 'text-teal-600 hover:text-teal-800'} disabled:opacity-50`}
+                              >
+                                {notifying === o.id ? 'Sending…' : notified[o.id] ? '✓ Notified' : 'Notify'}
+                              </button>
+                            )}
+                            <button onClick={() => { setEditingOrder(editingOrder === o.id ? null : o.id); setOrderEdits({ status: o.status, slaughter_date: o.slaughter_date, slaughter_location: o.slaughter_location, halal_cert_ref: o.halal_cert_ref, fulfilment_note: o.fulfilment_note }) }}
+                              className="text-xs text-[#1A3D2B] font-semibold hover:underline">
+                              {editingOrder === o.id ? 'Cancel' : 'Update'}
+                            </button>
+                          </div>
                         </td>
                       </tr>
                       {editingOrder === o.id && (
