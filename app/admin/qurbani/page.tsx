@@ -9,11 +9,20 @@ function fmt(amount: number, currency: string) {
 }
 
 const STATUS_COLORS: Record<QurbaniOrderStatus, string> = {
-  pending_payment: 'bg-gray-100 text-gray-600',
-  confirmed:       'bg-blue-100 text-blue-700',
-  slaughtered:     'bg-amber-100 text-amber-700',
-  distributed:     'bg-green-100 text-green-700',
-  cancelled:       'bg-red-100 text-red-600',
+  pending_payment:         'bg-gray-100 text-gray-600',
+  confirmed:               'bg-blue-100 text-blue-700',
+  partner_allocated:       'bg-indigo-100 text-indigo-700',
+  animal_verified:         'bg-violet-100 text-violet-700',
+  evidence_uploaded:       'bg-orange-100 text-orange-700',
+  slaughter_approved:      'bg-emerald-100 text-emerald-700',
+  slaughtered:             'bg-amber-100 text-amber-700',
+  meat_processed:          'bg-yellow-100 text-yellow-700',
+  distribution_dispatched: 'bg-teal-100 text-teal-700',
+  distributed:             'bg-green-100 text-green-700',
+  certificate_issued:      'bg-green-200 text-green-800',
+  financially_settled:     'bg-emerald-200 text-emerald-800',
+  closed:                  'bg-gray-200 text-gray-700',
+  cancelled:               'bg-red-100 text-red-600',
 }
 
 const ANIMAL_TYPES: QurbaniAnimalType[] = ['sheep', 'goat', 'cow_share', 'cow_full', 'buffalo_share', 'buffalo_full']
@@ -115,7 +124,8 @@ export default function AdminQurbaniPage() {
   }
 
   async function notifyAll() {
-    const targets = orders.filter(o => o.status === 'distributed' || o.status === 'slaughtered')
+    const NOTIFY_ELIGIBLE: QurbaniOrderStatus[] = ['slaughtered', 'distributed', 'certificate_issued']
+    const targets = orders.filter(o => NOTIFY_ELIGIBLE.includes(o.status))
     if (!targets.length) return
     setNotifyingAll(true)
     setNotifyAllResult(null)
@@ -139,12 +149,14 @@ export default function AdminQurbaniPage() {
   }
 
   const activeCampaign = campaigns.find(c => c.active)
+  const IN_PIPELINE: QurbaniOrderStatus[] = ['partner_allocated','animal_verified','evidence_uploaded','slaughter_approved','slaughtered','meat_processed','distribution_dispatched']
+  const COMPLETE: QurbaniOrderStatus[] = ['distributed','certificate_issued','financially_settled','closed']
   const stats = {
     total: orders.length,
-    confirmed: orders.filter(o => o.status === 'confirmed').length,
-    slaughtered: orders.filter(o => o.status === 'slaughtered').length,
-    distributed: orders.filter(o => o.status === 'distributed').length,
     pending: orders.filter(o => o.status === 'pending_payment').length,
+    confirmed: orders.filter(o => o.status === 'confirmed').length,
+    in_pipeline: orders.filter(o => IN_PIPELINE.includes(o.status)).length,
+    complete: orders.filter(o => COMPLETE.includes(o.status)).length,
   }
 
   if (loading) {
@@ -271,7 +283,7 @@ export default function AdminQurbaniPage() {
         <section>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-base font-semibold text-gray-700">Orders</h2>
-            {orders.some(o => o.status === 'distributed' || o.status === 'slaughtered') && (
+            {orders.some(o => (['slaughtered','distributed','certificate_issued'] as QurbaniOrderStatus[]).includes(o.status)) && (
               <div className="flex items-center gap-2">
                 {notifyAllResult && <span className="text-xs text-green-600 font-semibold">{notifyAllResult}</span>}
                 <button onClick={notifyAll} disabled={notifyingAll}
@@ -286,8 +298,8 @@ export default function AdminQurbaniPage() {
               { label: 'Total', value: stats.total, color: 'text-gray-800' },
               { label: 'Pending', value: stats.pending, color: 'text-gray-500' },
               { label: 'Confirmed', value: stats.confirmed, color: 'text-blue-700' },
-              { label: 'Slaughtered', value: stats.slaughtered, color: 'text-amber-700' },
-              { label: 'Distributed', value: stats.distributed, color: 'text-green-700' },
+              { label: 'In Progress', value: stats.in_pipeline, color: 'text-amber-700' },
+              { label: 'Complete', value: stats.complete, color: 'text-green-700' },
             ].map(s => (
               <div key={s.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 text-center">
                 <p className="text-xs text-gray-400 font-semibold">{s.label}</p>
@@ -325,11 +337,11 @@ export default function AdminQurbaniPage() {
                         </td>
                         <td className="px-4 py-3 text-right font-semibold">{fmt(o.amount, o.currency)}</td>
                         <td className="px-4 py-3">
-                          <span className={`px-2 py-0.5 rounded-lg text-xs font-semibold ${STATUS_COLORS[o.status]}`}>{o.status.replace('_', ' ')}</span>
+                          <span className={`px-2 py-0.5 rounded-lg text-xs font-semibold ${STATUS_COLORS[o.status]}`}>{o.status.replace(/_/g, ' ')}</span>
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-3">
-                            {(o.status === 'slaughtered' || o.status === 'distributed') && (
+                            {(['slaughtered','distributed','certificate_issued'] as QurbaniOrderStatus[]).includes(o.status) && (
                               <button
                                 onClick={() => sendNotification(o.id)}
                                 disabled={notifying === o.id}
@@ -338,7 +350,7 @@ export default function AdminQurbaniPage() {
                                 {notifying === o.id ? 'Sending…' : notified[o.id] ? '✓ Notified' : 'Notify'}
                               </button>
                             )}
-                            <button onClick={() => { setEditingOrder(editingOrder === o.id ? null : o.id); setOrderEdits({ status: o.status, slaughter_date: o.slaughter_date, slaughter_location: o.slaughter_location, halal_cert_ref: o.halal_cert_ref, fulfilment_note: o.fulfilment_note }) }}
+                            <button onClick={() => { setEditingOrder(editingOrder === o.id ? null : o.id); setOrderEdits({ status: o.status, slaughter_date: o.slaughter_date, slaughter_location: o.slaughter_location, halal_cert_ref: o.halal_cert_ref, fulfilment_note: o.fulfilment_note, partner_id: o.partner_id, animal_id: o.animal_id, scheduled_slaughter_datetime: o.scheduled_slaughter_datetime, slaughter_evidence_url: o.slaughter_evidence_url, meat_weight_kg: o.meat_weight_kg, distribution_evidence_url: o.distribution_evidence_url, certificate_url: o.certificate_url, financial_settlement_ref: o.financial_settlement_ref }) }}
                               className="text-xs text-[#1A3D2B] font-semibold hover:underline">
                               {editingOrder === o.id ? 'Cancel' : 'Update'}
                             </button>
@@ -353,7 +365,22 @@ export default function AdminQurbaniPage() {
                                 <label className="text-xs font-semibold text-gray-500">Status</label>
                                 <select value={orderEdits.status ?? o.status} onChange={e => setOrderEdits(v => ({ ...v, status: e.target.value as QurbaniOrderStatus }))}
                                   className="w-full px-2 py-1.5 rounded-lg border border-gray-200 text-sm mt-0.5">
-                                  {(['pending_payment','confirmed','slaughtered','distributed','cancelled'] as QurbaniOrderStatus[]).map(s => <option key={s} value={s}>{s}</option>)}
+                                  {([
+                                    ['pending_payment','Pending Payment'],
+                                    ['confirmed','Confirmed'],
+                                    ['partner_allocated','Partner Allocated'],
+                                    ['animal_verified','Animal Verified'],
+                                    ['evidence_uploaded','Evidence Uploaded'],
+                                    ['slaughter_approved','Slaughter Approved'],
+                                    ['slaughtered','Slaughtered'],
+                                    ['meat_processed','Meat Processed'],
+                                    ['distribution_dispatched','Distribution Dispatched'],
+                                    ['distributed','Distributed'],
+                                    ['certificate_issued','Certificate Issued'],
+                                    ['financially_settled','Financially Settled'],
+                                    ['closed','Closed'],
+                                    ['cancelled','Cancelled'],
+                                  ] as [QurbaniOrderStatus, string][]).map(([s, label]) => <option key={s} value={s}>{label}</option>)}
                                 </select>
                               </div>
                               <div>
@@ -374,6 +401,49 @@ export default function AdminQurbaniPage() {
                               <div className="col-span-2">
                                 <label className="text-xs font-semibold text-gray-500">Note</label>
                                 <input value={orderEdits.fulfilment_note ?? ''} onChange={e => setOrderEdits(v => ({ ...v, fulfilment_note: e.target.value }))}
+                                  className="w-full px-2 py-1.5 rounded-lg border border-gray-200 text-sm mt-0.5" />
+                              </div>
+                              <div>
+                                <label className="text-xs font-semibold text-gray-500">Partner</label>
+                                <select value={orderEdits.partner_id ?? ''} onChange={e => setOrderEdits(v => ({ ...v, partner_id: e.target.value, partner_name: partners.find(p => p.id === e.target.value)?.name }))}
+                                  className="w-full px-2 py-1.5 rounded-lg border border-gray-200 text-sm mt-0.5">
+                                  <option value="">— unassigned —</option>
+                                  {partners.map(p => <option key={p.id} value={p.id}>{p.name}{p.country ? ` (${p.country})` : ''}</option>)}
+                                </select>
+                              </div>
+                              <div>
+                                <label className="text-xs font-semibold text-gray-500">Animal ID</label>
+                                <input value={orderEdits.animal_id ?? ''} onChange={e => setOrderEdits(v => ({ ...v, animal_id: e.target.value }))} placeholder="e.g. SHE-0042"
+                                  className="w-full px-2 py-1.5 rounded-lg border border-gray-200 text-sm mt-0.5" />
+                              </div>
+                              <div>
+                                <label className="text-xs font-semibold text-gray-500">Scheduled Slaughter</label>
+                                <input type="datetime-local" value={orderEdits.scheduled_slaughter_datetime ?? ''} onChange={e => setOrderEdits(v => ({ ...v, scheduled_slaughter_datetime: e.target.value }))}
+                                  className="w-full px-2 py-1.5 rounded-lg border border-gray-200 text-sm mt-0.5" />
+                              </div>
+                              <div>
+                                <label className="text-xs font-semibold text-gray-500">Meat Weight (kg)</label>
+                                <input type="number" step="0.1" min="0" value={orderEdits.meat_weight_kg ?? ''} onChange={e => setOrderEdits(v => ({ ...v, meat_weight_kg: e.target.value ? +e.target.value : undefined }))}
+                                  className="w-full px-2 py-1.5 rounded-lg border border-gray-200 text-sm mt-0.5" />
+                              </div>
+                              <div className="col-span-2">
+                                <label className="text-xs font-semibold text-gray-500">Slaughter Evidence URL</label>
+                                <input value={orderEdits.slaughter_evidence_url ?? ''} onChange={e => setOrderEdits(v => ({ ...v, slaughter_evidence_url: e.target.value }))} placeholder="https://…"
+                                  className="w-full px-2 py-1.5 rounded-lg border border-gray-200 text-sm mt-0.5" />
+                              </div>
+                              <div className="col-span-2">
+                                <label className="text-xs font-semibold text-gray-500">Distribution Evidence URL</label>
+                                <input value={orderEdits.distribution_evidence_url ?? ''} onChange={e => setOrderEdits(v => ({ ...v, distribution_evidence_url: e.target.value }))} placeholder="https://…"
+                                  className="w-full px-2 py-1.5 rounded-lg border border-gray-200 text-sm mt-0.5" />
+                              </div>
+                              <div>
+                                <label className="text-xs font-semibold text-gray-500">Certificate URL</label>
+                                <input value={orderEdits.certificate_url ?? ''} onChange={e => setOrderEdits(v => ({ ...v, certificate_url: e.target.value }))} placeholder="https://…"
+                                  className="w-full px-2 py-1.5 rounded-lg border border-gray-200 text-sm mt-0.5" />
+                              </div>
+                              <div>
+                                <label className="text-xs font-semibold text-gray-500">Settlement Ref</label>
+                                <input value={orderEdits.financial_settlement_ref ?? ''} onChange={e => setOrderEdits(v => ({ ...v, financial_settlement_ref: e.target.value }))} placeholder="Bank TXN or ref"
                                   className="w-full px-2 py-1.5 rounded-lg border border-gray-200 text-sm mt-0.5" />
                               </div>
                             </div>

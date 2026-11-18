@@ -397,7 +397,21 @@ export const ASNAF_META: Record<AsnafCategory, { label: string; arabic: string; 
 
 export type QurbaniAnimalType = 'sheep' | 'goat' | 'cow_share' | 'cow_full' | 'buffalo_share' | 'buffalo_full'
 export type QurbaniNiyyah = 'self' | 'deceased' | 'family' | 'general'
-export type QurbaniOrderStatus = 'pending_payment' | 'confirmed' | 'slaughtered' | 'distributed' | 'cancelled'
+export type QurbaniOrderStatus =
+  | 'pending_payment'
+  | 'confirmed'
+  | 'partner_allocated'
+  | 'animal_verified'
+  | 'evidence_uploaded'
+  | 'slaughter_approved'
+  | 'slaughtered'
+  | 'meat_processed'
+  | 'distribution_dispatched'
+  | 'distributed'
+  | 'certificate_issued'
+  | 'financially_settled'
+  | 'closed'
+  | 'cancelled'
 
 export interface QurbaniAnimalConfig {
   type: QurbaniAnimalType
@@ -438,6 +452,15 @@ export interface QurbaniOrder {
   slaughter_location?: string
   halal_cert_ref?: string
   fulfilment_note?: string
+  partner_id?: string
+  partner_name?: string
+  animal_id?: string
+  scheduled_slaughter_datetime?: string
+  slaughter_evidence_url?: string
+  meat_weight_kg?: number
+  distribution_evidence_url?: string
+  certificate_url?: string
+  financial_settlement_ref?: string
   created_at: string
 }
 

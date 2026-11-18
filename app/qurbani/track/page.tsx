@@ -12,7 +12,20 @@ const STEPS: { status: QurbaniOrderStatus; label: string; arabic: string }[] = [
 ]
 
 const STATUS_ORDER: Record<QurbaniOrderStatus, number> = {
-  pending_payment: 0, confirmed: 1, slaughtered: 2, distributed: 3, cancelled: -1,
+  pending_payment:         0,
+  confirmed:               1,
+  partner_allocated:       1,
+  animal_verified:         1,
+  evidence_uploaded:       2,
+  slaughter_approved:      2,
+  slaughtered:             2,
+  meat_processed:          2,
+  distribution_dispatched: 2,
+  distributed:             3,
+  certificate_issued:      3,
+  financially_settled:     3,
+  closed:                  3,
+  cancelled:               -1,
 }
 
 function fmt(amount: number, currency: string) {
