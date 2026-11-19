@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import AdminSidebarLayout from '@/components/admin/AdminSidebarLayout'
-import type { QurbaniCampaign, QurbaniOrder, QurbaniOrderStatus, QurbaniPartner, QurbaniAnimalType } from '@/types'
+import type { QurbaniCampaign, QurbaniOrder, QurbaniOrderStatus, QurbaniPartner, QurbaniSettlement, QurbaniAnimalType } from '@/types'
 
 function fmt(amount: number, currency: string) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount / 100)
@@ -32,6 +32,7 @@ export default function AdminQurbaniPage() {
   const [campaigns, setCampaigns] = useState<QurbaniCampaign[]>([])
   const [orders, setOrders] = useState<QurbaniOrder[]>([])
   const [partners, setPartners] = useState<QurbaniPartner[]>([])
+  const [settlements, setSettlements] = useState<QurbaniSettlement[]>([])
   const [loading, setLoading] = useState(true)
   const [seeding, setSeeding] = useState(false)
 
@@ -64,15 +65,25 @@ export default function AdminQurbaniPage() {
   const [partnerCap, setPartnerCap] = useState(50)
   const [partnerTypes, setPartnerTypes] = useState<QurbaniAnimalType[]>(['sheep', 'goat'])
 
+  // Settlement form
+  const [showCreateSettlement, setShowCreateSettlement] = useState(false)
+  const [settlPartner, setSettlPartner] = useState('')
+  const [settlAmount, setSettlAmount] = useState('')
+  const [settlDate, setSettlDate] = useState(new Date().toISOString().split('T')[0])
+  const [settlRef, setSettlRef] = useState('')
+  const [settlNote, setSettlNote] = useState('')
+
   const load = useCallback(async () => {
-    const [c, o, p] = await Promise.all([
+    const [c, o, p, s] = await Promise.all([
       fetch('/api/admin/qurbani/campaigns').then(r => r.json()),
       fetch('/api/admin/qurbani/orders').then(r => r.json()),
       fetch('/api/admin/qurbani/partners').then(r => r.json()),
+      fetch('/api/admin/qurbani/settlements').then(r => r.json()),
     ])
     setCampaigns(c)
     setOrders(o)
     setPartners(p)
+    setSettlements(s)
     setLoading(false)
   }, [])
 
@@ -146,6 +157,39 @@ export default function AdminQurbaniPage() {
       body: JSON.stringify({ name: partnerName, country: partnerCountry, halal_cert_number: partnerCert, capacity_per_day: partnerCap, animal_types: partnerTypes }),
     })
     if (res.ok) { await load(); setShowAddPartner(false); setPartnerName(''); setPartnerCountry(''); setPartnerCert('') }
+  }
+
+  async function closeCampaign(c: QurbaniCampaign) {
+    await fetch(`/api/admin/qurbani/campaigns/${c.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ active: false, closed_at: new Date().toISOString() }),
+    })
+    await load()
+  }
+
+  async function createSettlement(e: React.FormEvent) {
+    e.preventDefault()
+    const partner = partners.find(p => p.id === settlPartner)
+    if (!partner || !activeCampaign) return
+    await fetch('/api/admin/qurbani/settlements', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        partner_id: settlPartner,
+        partner_name: partner.name,
+        campaign_id: activeCampaign.id,
+        order_ids: [],
+        amount: Math.round(parseFloat(settlAmount) * 100),
+        currency: activeCampaign.currency,
+        payment_date: settlDate,
+        payment_ref: settlRef || undefined,
+        note: settlNote || undefined,
+      }),
+    })
+    await load()
+    setShowCreateSettlement(false)
+    setSettlPartner(''); setSettlAmount(''); setSettlRef(''); setSettlNote('')
   }
 
   const activeCampaign = campaigns.find(c => c.active)
@@ -254,10 +298,23 @@ export default function AdminQurbaniPage() {
                   <p className="text-lg font-bold text-gray-900">Qurbani {activeCampaign.year}{activeCampaign.hijri_year ? ` · ${activeCampaign.hijri_year}` : ''}</p>
                   <p className="text-sm text-gray-500">Eid: {activeCampaign.eid_date} · Deadline: {activeCampaign.fulfilment_deadline} · {activeCampaign.currency}</p>
                 </div>
-                <button onClick={() => toggleCampaign(activeCampaign)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-semibold ${activeCampaign.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                  {activeCampaign.active ? 'Active' : 'Inactive'}
-                </button>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => toggleCampaign(activeCampaign)}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-semibold ${activeCampaign.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                    {activeCampaign.active ? 'Active' : 'Inactive'}
+                  </button>
+                  {!activeCampaign.closed_at && (
+                    <button onClick={() => closeCampaign(activeCampaign)}
+                      className="px-3 py-1.5 rounded-lg text-sm font-semibold bg-red-50 text-red-600 hover:bg-red-100 transition-colors">
+                      Close Campaign
+                    </button>
+                  )}
+                  {activeCampaign.closed_at && (
+                    <span className="px-3 py-1.5 rounded-lg text-sm font-semibold bg-gray-100 text-gray-500">
+                      Closed {activeCampaign.closed_at.split('T')[0]}
+                    </span>
+                  )}
+                </div>
               </div>
               <table className="w-full text-sm">
                 <thead><tr className="text-xs text-gray-400"><th className="text-left pb-1">Animal</th><th className="text-right pb-1">Price</th><th className="text-right pb-1">Capacity</th><th className="text-right pb-1">Ordered</th></tr></thead>
@@ -538,6 +595,128 @@ export default function AdminQurbaniPage() {
             </div>
           )}
         </section>
+
+        {/* Settlements */}
+        {activeCampaign && (
+          <section>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-base font-semibold text-gray-700">Partner Settlements</h2>
+              <button onClick={() => setShowCreateSettlement(v => !v)}
+                className="px-3 py-1.5 rounded-lg bg-[#1A3D2B] text-white text-sm font-semibold">+ Record Payment</button>
+            </div>
+
+            {showCreateSettlement && (
+              <form onSubmit={createSettlement} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4 mb-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Partner <span className="text-red-400">*</span></label>
+                    <select required value={settlPartner} onChange={e => setSettlPartner(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3D2B]/20">
+                      <option value="">— select partner —</option>
+                      {partners.map(p => <option key={p.id} value={p.id}>{p.name}{p.country ? ` (${p.country})` : ''}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Amount ({activeCampaign.currency}) <span className="text-red-400">*</span></label>
+                    <input required type="number" step="0.01" min="0" value={settlAmount} onChange={e => setSettlAmount(e.target.value)} placeholder="0.00"
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3D2B]/20" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Payment Date <span className="text-red-400">*</span></label>
+                    <input required type="date" value={settlDate} onChange={e => setSettlDate(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3D2B]/20" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Payment Ref</label>
+                    <input value={settlRef} onChange={e => setSettlRef(e.target.value)} placeholder="Bank TXN / FAST ref"
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3D2B]/20" />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Note</label>
+                    <input value={settlNote} onChange={e => setSettlNote(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3D2B]/20" />
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button type="submit" className="px-4 py-2 rounded-xl bg-[#1A3D2B] text-white text-sm font-semibold">Record Payment</button>
+                  <button type="button" onClick={() => setShowCreateSettlement(false)} className="px-4 py-2 rounded-xl bg-gray-100 text-gray-600 text-sm">Cancel</button>
+                </div>
+              </form>
+            )}
+
+            {/* Reconciliation per partner */}
+            {partners.length > 0 && (
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-4">
+                <div className="px-4 py-3 bg-gray-50 border-b border-gray-100">
+                  <p className="text-xs font-semibold text-gray-500">Reconciliation — {activeCampaign.year}</p>
+                </div>
+                <table className="w-full text-sm">
+                  <thead className="text-xs text-gray-400">
+                    <tr>
+                      <th className="text-left px-4 py-2">Partner</th>
+                      <th className="text-right px-4 py-2">Orders</th>
+                      <th className="text-right px-4 py-2">Order Total</th>
+                      <th className="text-right px-4 py-2">Settled</th>
+                      <th className="text-right px-4 py-2">Outstanding</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {partners.map(p => {
+                      const pOrders = orders.filter(o => o.partner_id === p.id && o.status !== 'cancelled' && o.status !== 'pending_payment')
+                      const orderTotal = pOrders.reduce((sum, o) => sum + o.amount, 0)
+                      const settled = settlements.filter(s => s.partner_id === p.id).reduce((sum, s) => sum + s.amount, 0)
+                      const outstanding = orderTotal - settled
+                      return (
+                        <tr key={p.id} className="border-t border-gray-50">
+                          <td className="px-4 py-3">
+                            <p className="font-semibold">{p.name}</p>
+                            {p.country && <p className="text-xs text-gray-400">{p.country}</p>}
+                          </td>
+                          <td className="px-4 py-3 text-right text-gray-600">{pOrders.length}</td>
+                          <td className="px-4 py-3 text-right font-semibold">{fmt(orderTotal, activeCampaign.currency)}</td>
+                          <td className="px-4 py-3 text-right text-green-700 font-semibold">{fmt(settled, activeCampaign.currency)}</td>
+                          <td className={`px-4 py-3 text-right font-semibold ${outstanding > 0 ? 'text-red-600' : 'text-gray-400'}`}>{fmt(outstanding, activeCampaign.currency)}</td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Settlement history */}
+            {settlements.length > 0 && (
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 text-xs text-gray-500">
+                    <tr>
+                      <th className="text-left px-4 py-3">Partner</th>
+                      <th className="text-left px-4 py-3">Date</th>
+                      <th className="text-right px-4 py-3">Amount</th>
+                      <th className="text-left px-4 py-3">Ref</th>
+                      <th className="text-left px-4 py-3">Note</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {settlements.map(s => (
+                      <tr key={s.id} className="border-t border-gray-50">
+                        <td className="px-4 py-3 font-semibold">{s.partner_name}</td>
+                        <td className="px-4 py-3 text-gray-500">{s.payment_date}</td>
+                        <td className="px-4 py-3 text-right font-semibold text-green-700">{fmt(s.amount, s.currency)}</td>
+                        <td className="px-4 py-3 font-mono text-xs text-gray-500">{s.payment_ref ?? '—'}</td>
+                        <td className="px-4 py-3 text-xs text-gray-400">{s.note ?? ''}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {settlements.length === 0 && !showCreateSettlement && (
+              <div className="bg-white rounded-2xl border border-gray-100 p-6 text-center text-gray-400 text-sm">No settlements recorded yet.</div>
+            )}
+          </section>
+        )}
       </div>
     </AdminSidebarLayout>
   )

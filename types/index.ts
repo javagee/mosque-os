@@ -431,6 +431,21 @@ export interface QurbaniCampaign {
   currency: string
   animals: QurbaniAnimalConfig[]
   active: boolean
+  closed_at?: string
+  created_at: string
+}
+
+export interface QurbaniSettlement {
+  id: string              // QST-XXXXXX
+  partner_id: string
+  partner_name: string
+  campaign_id: string
+  order_ids: string[]     // QOR-XXXXXX[] covered by this payment
+  amount: number          // cents
+  currency: string
+  payment_ref?: string    // bank transaction reference
+  payment_date: string    // YYYY-MM-DD
+  note?: string
   created_at: string
 }
 

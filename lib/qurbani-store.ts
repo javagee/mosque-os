@@ -1,4 +1,4 @@
-import type { QurbaniCampaign, QurbaniOrder, QurbaniPartner, Order } from '@/types'
+import type { QurbaniCampaign, QurbaniOrder, QurbaniPartner, QurbaniSettlement, Order } from '@/types'
 import { saveOrder } from '@/lib/order-store'
 
 async function getRedis() {
@@ -19,10 +19,12 @@ function genId(prefix: string) {
 export const generateCampaignId = () => genId('QRB-')
 export const generateOrderId = () => genId('QOR-')
 export const generatePartnerId = () => genId('QPT-')
+export const generateSettlementId = () => genId('QST-')
 
 const memCampaigns = new Map<string, QurbaniCampaign>()
 const memOrders = new Map<string, QurbaniOrder>()
 const memPartners = new Map<string, QurbaniPartner>()
+const memSettlements = new Map<string, QurbaniSettlement>()
 const memCampaignOrders = new Map<string, Set<string>>()
 
 export async function saveCampaign(c: QurbaniCampaign): Promise<void> {
@@ -128,6 +130,34 @@ export async function getAllPartners(): Promise<QurbaniPartner[]> {
     return items.filter((p): p is QurbaniPartner => p !== null)
   }
   return [...memPartners.values()]
+}
+
+export async function saveQurbaniSettlement(s: QurbaniSettlement): Promise<void> {
+  const r = await getRedis()
+  if (r) {
+    await r.set(`qurbani:settlement:${s.id}`, s)
+    await r.sadd('qurbani:settlements:all', s.id)
+    await r.sadd(`qurbani:campaign:${s.campaign_id}:settlements`, s.id)
+  } else {
+    memSettlements.set(s.id, s)
+  }
+}
+
+export async function getAllQurbaniSettlements(): Promise<QurbaniSettlement[]> {
+  const r = await getRedis()
+  if (r) {
+    const ids = await r.smembers('qurbani:settlements:all')
+    if (!ids.length) return []
+    const items = await Promise.all(ids.map(id => r.get<QurbaniSettlement>(`qurbani:settlement:${id}`)))
+    return items.filter((s): s is QurbaniSettlement => s !== null)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+  }
+  return [...memSettlements.values()].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+}
+
+export async function getCampaignSettlements(campaignId: string): Promise<QurbaniSettlement[]> {
+  const all = await getAllQurbaniSettlements()
+  return all.filter(s => s.campaign_id === campaignId)
 }
 
 const RCHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
