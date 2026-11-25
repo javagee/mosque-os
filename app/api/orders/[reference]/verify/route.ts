@@ -61,18 +61,47 @@ export async function POST(
 
   // If this is a Ramadan cash slot order, mark slot SPONSORED and email donor
   if (order.campaign_id === 'ramadan-slot') {
+    let slot: Awaited<ReturnType<typeof import('@/lib/ramadan-store').findSlotByOrderRef>> = null
     try {
       const { findSlotByOrderRef, verifySlot: verifyRamadanSlot } = await import('@/lib/ramadan-store')
       const year = new Date().getFullYear()
-      const slot = await findSlotByOrderRef(year, order.reference)
+      slot = await findSlotByOrderRef(year, order.reference)
       if (slot) await verifyRamadanSlot(year, slot.id)
     } catch (e) {
       console.error('Failed to mark Ramadan slot as sponsored:', e)
     }
+
     const BREVO_API_KEY = process.env.BREVO_API_KEY
     const mosqueName = process.env.NEXT_PUBLIC_MOSQUE_NAME ?? 'Our Mosque'
     if (BREVO_API_KEY && !BREVO_API_KEY.includes('REPLACE_ME') && BREVO_API_KEY.length > 10) {
       const sender = { name: mosqueName, email: process.env.BREVO_FROM_EMAIL ?? 'noreply@mosque.sg' }
+      const receiptRef = `RCP-${order.reference}`
+
+      // Generate PDF receipt
+      let pdfAttachment: { name: string; content: string; type: string } | undefined
+      try {
+        const { generateRamadanReceipt } = await import('@/lib/receipt-generator')
+        const pdfBytes = await generateRamadanReceipt({
+          receiptRef,
+          orderRef: order.reference,
+          mosqueName,
+          donorName: order.buyer_name,
+          donorEmail: order.buyer_email,
+          night: slot?.night ?? 0,
+          mealType: slot?.meal_type ?? 'GENERAL',
+          amount: order.total,
+          verifiedAt: new Date().toISOString(),
+          anonymous: slot?.donor_anonymous ?? false,
+        })
+        pdfAttachment = {
+          name: `${receiptRef}.pdf`,
+          content: Buffer.from(pdfBytes).toString('base64'),
+          type: 'application/pdf',
+        }
+      } catch (e) {
+        console.error('PDF receipt generation failed:', e)
+      }
+
       try {
         await fetch('https://api.brevo.com/v3/smtp/email', {
           method: 'POST',
@@ -81,6 +110,7 @@ export async function POST(
             sender,
             to: [{ email: order.buyer_email }],
             subject: `JazakAllah Khayran — your Ramadan sponsorship is confirmed (${order.reference})`,
+            attachment: pdfAttachment ? [pdfAttachment] : undefined,
             htmlContent: `
 <div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:24px;">
   <div style="background:#1A3D2B;border-radius:16px;padding:24px;text-align:center;margin-bottom:24px;">
@@ -93,15 +123,17 @@ export async function POST(
     Your payment of <strong>${formatCurrency(order.total, order.currency)}</strong> for
     <strong>${order.campaign_name}</strong> has been verified by the mosque.
     Your name will appear on the Ramadan board.
+    ${pdfAttachment ? 'Your receipt is attached to this email.' : ''}
   </p>
   <div style="margin:20px 0;padding:16px;background:#FFF8EC;border-radius:12px;border-left:3px solid #C9A84C;">
     <p style="margin:0;font-size:14px;color:#666;line-height:1.8;">
+      Receipt: <strong style="color:#1A3D2B;">${receiptRef}</strong><br/>
       Reference: <strong style="color:#1A3D2B;">${order.reference}</strong><br/>
       Amount: <strong>${formatCurrency(order.total, order.currency)}</strong><br/>
       May Allah accept your generosity and bless you abundantly.
     </p>
   </div>
-  <p style="margin-top:20px;font-size:12px;color:#aaa;text-align:center;">${mosqueName} · Powered by Imara</p>
+  <p style="margin-top:20px;font-size:11px;color:#aaa;text-align:center;">This is not a tax-deduction receipt. ${mosqueName} · Powered by Imara</p>
 </div>`,
           }),
         })

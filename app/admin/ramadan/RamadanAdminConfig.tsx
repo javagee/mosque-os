@@ -8,14 +8,22 @@ function sgd(cents: number) {
   return new Intl.NumberFormat('en-SG', { style: 'currency', currency: 'SGD', minimumFractionDigits: 0 }).format(cents / 100)
 }
 
+function computeGap(night: RamadanNightData, slots: RamadanSlot[]): number {
+  if (!slots.length) return 0
+  const slotTotal = slots.reduce((s, sl) => s + sl.amount, 0)
+  return Math.max(0, night.target - slotTotal)
+}
+
 export default function RamadanAdminConfig({
   config: initialConfig,
   nights,
   pendingSlots = [],
+  slotsByNight = {},
 }: {
   config: RamadanConfig
   nights: RamadanNightData[]
   pendingSlots?: RamadanSlot[]
+  slotsByNight?: Record<number, RamadanSlot[]>
 }) {
   const router = useRouter()
   const [config, setConfig] = useState(initialConfig)
@@ -94,6 +102,12 @@ export default function RamadanAdminConfig({
   }
 
   const pendingNights = nights.filter(n => n.sponsors.some(s => s.status === 'pending'))
+
+  // Funding gap: nights where slot total < nightly target
+  const gapNights = nights.filter(n => {
+    const slots = slotsByNight[n.night] ?? []
+    return slots.length > 0 && computeGap(n, slots) > 0
+  })
 
   return (
     <div className="space-y-6">
@@ -182,6 +196,40 @@ export default function RamadanAdminConfig({
                 </div>
               ))
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Funding gap alert — prominent red review prompt (spec §6.2) */}
+      {gapNights.length > 0 && (
+        <div className="bg-red-50 border-2 border-red-400 rounded-2xl p-5">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <span className="text-red-600 text-sm font-bold">!</span>
+            </div>
+            <div className="flex-1">
+              <h2 className="font-bold text-red-800 text-sm mb-1">Funding Gap — Review Required</h2>
+              <p className="text-xs text-red-600 mb-3">
+                {gapNights.length} night{gapNights.length > 1 ? 's have' : ' has'} slots that do not cover the nightly target. Create additional slots or adjust the target.
+              </p>
+              <div className="space-y-2">
+                {gapNights.map(n => {
+                  const slots = slotsByNight[n.night] ?? []
+                  const slotTotal = slots.reduce((s, sl) => s + sl.amount, 0)
+                  const gap = n.target - slotTotal
+                  return (
+                    <div key={n.night} className="bg-white rounded-xl px-3 py-2 flex items-center justify-between gap-3">
+                      <p className="text-sm font-semibold text-gray-800">Night {n.night}</p>
+                      <div className="flex items-center gap-4 text-xs text-gray-500">
+                        <span>Target: <strong>{sgd(n.target)}</strong></span>
+                        <span>Slots: <strong>{sgd(slotTotal)}</strong></span>
+                        <span className="font-bold text-red-600">Gap: {sgd(gap)}</span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -276,31 +324,40 @@ export default function RamadanAdminConfig({
               <tr className="text-xs text-gray-400 border-b border-gray-50">
                 <th className="text-left px-5 py-3 font-semibold">Night</th>
                 <th className="text-left px-5 py-3 font-semibold">Status</th>
+                <th className="text-right px-5 py-3 font-semibold">Slots</th>
+                <th className="text-right px-5 py-3 font-semibold">Gap</th>
                 <th className="text-right px-5 py-3 font-semibold">Raised</th>
                 <th className="text-right px-5 py-3 font-semibold">Target</th>
-                <th className="text-right px-5 py-3 font-semibold">Confirmed</th>
-                <th className="text-right px-5 py-3 font-semibold">Pending</th>
               </tr>
             </thead>
             <tbody>
-              {nights.map(n => (
-                <tr key={n.night} className="border-b border-gray-50 hover:bg-gray-50">
-                  <td className="px-5 py-2.5 font-semibold text-[#1A3D2B]">Night {n.night}</td>
-                  <td className="px-5 py-2.5">
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                      n.status === 'sponsored' ? 'bg-emerald-100 text-emerald-700' :
-                      n.status === 'partial' ? 'bg-amber-100 text-amber-700' :
-                      'bg-gray-100 text-gray-500'
-                    }`}>
-                      {n.status === 'sponsored' ? 'Sponsored' : n.status === 'partial' ? 'Partial' : 'Available'}
-                    </span>
-                  </td>
-                  <td className="px-5 py-2.5 text-right font-semibold text-gray-700">{sgd(n.raised)}</td>
-                  <td className="px-5 py-2.5 text-right text-gray-400">{sgd(n.target)}</td>
-                  <td className="px-5 py-2.5 text-right text-emerald-600">{n.sponsors.filter(s => s.status === 'confirmed').length}</td>
-                  <td className="px-5 py-2.5 text-right text-amber-600">{n.sponsors.filter(s => s.status === 'pending').length}</td>
-                </tr>
-              ))}
+              {nights.map(n => {
+                const slots = slotsByNight[n.night] ?? []
+                const sponsored = slots.filter(s => s.status === 'SPONSORED').length
+                const gap = computeGap(n, slots)
+                return (
+                  <tr key={n.night} className={`border-b border-gray-50 hover:bg-gray-50 ${gap > 0 ? 'bg-red-50/40' : ''}`}>
+                    <td className="px-5 py-2.5 font-semibold text-[#1A3D2B]">Night {n.night}</td>
+                    <td className="px-5 py-2.5">
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                        n.status === 'sponsored' ? 'bg-emerald-100 text-emerald-700' :
+                        n.status === 'partial' ? 'bg-amber-100 text-amber-700' :
+                        'bg-gray-100 text-gray-500'
+                      }`}>
+                        {n.status === 'sponsored' ? 'Sponsored' : n.status === 'partial' ? 'Partial' : 'Available'}
+                      </span>
+                    </td>
+                    <td className="px-5 py-2.5 text-right text-gray-700">
+                      {slots.length > 0 ? `${sponsored}/${slots.length}` : '—'}
+                    </td>
+                    <td className={`px-5 py-2.5 text-right font-semibold ${gap > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                      {slots.length > 0 ? (gap > 0 ? `-${sgd(gap)}` : '✓') : '—'}
+                    </td>
+                    <td className="px-5 py-2.5 text-right font-semibold text-gray-700">{sgd(n.raised)}</td>
+                    <td className="px-5 py-2.5 text-right text-gray-400">{sgd(n.target)}</td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>

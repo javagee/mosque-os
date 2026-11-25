@@ -21,6 +21,12 @@ export default async function AdminRamadanPage() {
   const slots = (allNightSlots as RamadanSlot[][]).flat()
   const pendingSlots = slots.filter(s => s.status === 'CLAIMED_PENDING')
 
+  // Slot summary per night for gap bar
+  const slotsByNight: Record<number, RamadanSlot[]> = {}
+  ;(allNightSlots as RamadanSlot[][]).forEach((nightSlots, i) => {
+    if (nightSlots.length) slotsByNight[i + 1] = nightSlots
+  })
+
   const sponsoredCount = nights.filter(n => n.status === 'sponsored').length
   const totalRaised = nights.reduce((s, n) => s + n.raised, 0)
   const pendingCount = nights.reduce((s, n) => s + n.sponsors.filter(sp => sp.status === 'pending').length, 0)
@@ -63,7 +69,7 @@ export default async function AdminRamadanPage() {
           ))}
         </div>
 
-        <RamadanAdminConfig config={config} nights={nights} pendingSlots={pendingSlots} />
+        <RamadanAdminConfig config={config} nights={nights} pendingSlots={pendingSlots} slotsByNight={slotsByNight} />
       </div>
     </AdminSidebarLayout>
   )
