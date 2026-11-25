@@ -256,6 +256,15 @@ export async function claimSlot(
   return true
 }
 
+export async function findSlotByOrderRef(year: number, orderReference: string): Promise<RamadanSlot | null> {
+  for (let night = 1; night <= 30; night++) {
+    const slots = await getNightSlots(year, night)
+    const found = slots.find(s => s.order_reference === orderReference)
+    if (found) return found
+  }
+  return null
+}
+
 export async function verifySlot(year: number, slotId: string): Promise<RamadanSlot | null> {
   const r = await getRedis()
   if (r) {

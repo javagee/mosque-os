@@ -59,6 +59,59 @@ export async function POST(
   const updated = { ...order, status: 'verified' as const, verified_at: new Date().toISOString(), coupon_tokens: tokens }
   await saveOrder(updated)
 
+  // If this is a Ramadan cash slot order, mark slot SPONSORED and email donor
+  if (order.campaign_id === 'ramadan-slot') {
+    try {
+      const { findSlotByOrderRef, verifySlot: verifyRamadanSlot } = await import('@/lib/ramadan-store')
+      const year = new Date().getFullYear()
+      const slot = await findSlotByOrderRef(year, order.reference)
+      if (slot) await verifyRamadanSlot(year, slot.id)
+    } catch (e) {
+      console.error('Failed to mark Ramadan slot as sponsored:', e)
+    }
+    const BREVO_API_KEY = process.env.BREVO_API_KEY
+    const mosqueName = process.env.NEXT_PUBLIC_MOSQUE_NAME ?? 'Our Mosque'
+    if (BREVO_API_KEY && !BREVO_API_KEY.includes('REPLACE_ME') && BREVO_API_KEY.length > 10) {
+      const sender = { name: mosqueName, email: process.env.BREVO_FROM_EMAIL ?? 'noreply@mosque.sg' }
+      try {
+        await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: { 'api-key': BREVO_API_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sender,
+            to: [{ email: order.buyer_email }],
+            subject: `JazakAllah Khayran — your Ramadan sponsorship is confirmed (${order.reference})`,
+            htmlContent: `
+<div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:24px;">
+  <div style="background:#1A3D2B;border-radius:16px;padding:24px;text-align:center;margin-bottom:24px;">
+    <p style="color:#C9A84C;font-size:16px;font-weight:bold;margin:0 0 4px;">Imara · ${mosqueName}</p>
+    <h1 style="color:white;margin:0;font-size:26px;">JazakAllah Khayran</h1>
+    <p style="color:rgba(255,255,255,0.7);margin:8px 0 0;font-size:14px;">Your Ramadan sponsorship is confirmed</p>
+  </div>
+  <p style="color:#333;font-size:15px;">Assalamu Alaikum ${order.buyer_name},</p>
+  <p style="color:#555;font-size:14px;line-height:1.6;">
+    Your payment of <strong>${formatCurrency(order.total, order.currency)}</strong> for
+    <strong>${order.campaign_name}</strong> has been verified by the mosque.
+    Your name will appear on the Ramadan board.
+  </p>
+  <div style="margin:20px 0;padding:16px;background:#FFF8EC;border-radius:12px;border-left:3px solid #C9A84C;">
+    <p style="margin:0;font-size:14px;color:#666;line-height:1.8;">
+      Reference: <strong style="color:#1A3D2B;">${order.reference}</strong><br/>
+      Amount: <strong>${formatCurrency(order.total, order.currency)}</strong><br/>
+      May Allah accept your generosity and bless you abundantly.
+    </p>
+  </div>
+  <p style="margin-top:20px;font-size:12px;color:#aaa;text-align:center;">${mosqueName} · Powered by Imara</p>
+</div>`,
+          }),
+        })
+      } catch (e) {
+        console.error('Ramadan slot confirmation email failed:', e)
+      }
+    }
+    return NextResponse.json({ success: true })
+  }
+
   // If this is a Ramadan sadaqah order, confirm the sponsor
   if (order.campaign_id === 'ramadan') {
     try {
