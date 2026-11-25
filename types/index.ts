@@ -132,12 +132,30 @@ export interface RamadanNightData {
   status: 'available' | 'partial' | 'sponsored'
 }
 
+export interface RamadanExpenseLine {
+  label: string         // e.g. "Food packs", "Venue setup"
+  amount_cents: number  // planned, non-binding
+}
+
 export interface RamadanConfig {
   year: number
   default_target: number            // in cents, e.g. 10000 = S$100
   night_targets: Record<number, number>  // per-night overrides
   active: boolean
   hijri_month?: string              // e.g. "Ramadan 1446"
+  night_expenses: Record<number, RamadanExpenseLine[]>  // per-night planned expenses
+}
+
+export interface AuditEvent {
+  id: string
+  timestamp: string     // ISO
+  actor: string         // "system" | "admin" | donor ref
+  action: string        // e.g. "slot.verified" | "slot.claimed" | "slot.created"
+  entity_type: string   // "RamadanSlot" | "RamadanConfig"
+  entity_id: string
+  before?: Record<string, unknown>
+  after?: Record<string, unknown>
+  note?: string
 }
 
 // ── Ramadan Cash Slots (Caliph BUMI spec) ────────────────────────────────────

@@ -71,11 +71,27 @@ export async function POST(
       console.error('Failed to mark Ramadan slot as sponsored:', e)
     }
 
+    // Audit log
+    try {
+      const { appendAuditEvent } = await import('@/lib/ramadan-store')
+      await appendAuditEvent(new Date().getFullYear(), {
+        actor: 'admin',
+        action: 'slot.verified',
+        entity_type: 'RamadanSlot',
+        entity_id: slot?.id ?? order.reference,
+        after: { status: 'SPONSORED', order_reference: order.reference },
+        note: `Payment verified for ${order.buyer_name}`,
+      })
+    } catch (e) {
+      console.error('Audit log failed:', e)
+    }
+
     const BREVO_API_KEY = process.env.BREVO_API_KEY
     const mosqueName = process.env.NEXT_PUBLIC_MOSQUE_NAME ?? 'Our Mosque'
     if (BREVO_API_KEY && !BREVO_API_KEY.includes('REPLACE_ME') && BREVO_API_KEY.length > 10) {
       const sender = { name: mosqueName, email: process.env.BREVO_FROM_EMAIL ?? 'noreply@mosque.sg' }
-      const receiptRef = `RCP-${order.reference}`
+      const { getNextReceiptNumber } = await import('@/lib/ramadan-store')
+      const receiptRef = await getNextReceiptNumber(new Date().getFullYear())
 
       // Generate PDF receipt
       let pdfAttachment: { name: string; content: string; type: string } | undefined

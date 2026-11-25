@@ -65,5 +65,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slo
 
   await saveOrder(order)
 
+  try {
+    const { appendAuditEvent } = await import('@/lib/ramadan-store')
+    await appendAuditEvent(year, {
+      actor: donor_email.trim().toLowerCase(),
+      action: 'slot.claimed',
+      entity_type: 'RamadanSlot',
+      entity_id: slotId,
+      after: { status: 'CLAIMED_PENDING', order_reference: reference },
+    })
+  } catch { /* non-fatal */ }
+
   return NextResponse.json({ order_reference: reference, slot_id: slotId, amount: slot.amount })
 }

@@ -79,5 +79,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ nig
     created.push(slot)
   }
 
+  try {
+    const { appendAuditEvent } = await import('@/lib/ramadan-store')
+    await appendAuditEvent(year, {
+      actor: 'admin',
+      action: 'slot.created',
+      entity_type: 'RamadanSlot',
+      entity_id: `night-${nightNum}`,
+      after: { quantity, amount_cents, meal_type, meal_civil_date, booking_cutoff: bookingCutoff },
+    })
+  } catch { /* non-fatal */ }
+
   return NextResponse.json({ created: created.length, slots: created })
 }

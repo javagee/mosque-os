@@ -1,4 +1,4 @@
-import type { RamadanConfig, RamadanNightData, RamadanSponsor, RamadanSlot } from '@/types'
+import type { RamadanConfig, RamadanNightData, RamadanSponsor, RamadanSlot, AuditEvent } from '@/types'
 
 async function getRedis() {
   const url = process.env.UPSTASH_REDIS_REST_URL
@@ -13,6 +13,8 @@ const memConfigs = new Map<number, RamadanConfig>()
 const memSponsors = new Map<string, RamadanSponsor[]>()
 const memSlots = new Map<string, RamadanSlot>()         // key: "{year}:{slotId}"
 const memSlotIds = new Map<string, string[]>()          // key: "{year}:{night}"
+const memReceiptSeq = new Map<number, number>()         // key: year
+const memAudit = new Map<number, AuditEvent[]>()        // key: year
 
 function nightKey(year: number, night: number) {
   return `ramadan:${year}:night:${night}:sponsors`
@@ -31,7 +33,7 @@ function configKey(year: number) {
 }
 
 function defaultConfig(year: number): RamadanConfig {
-  return { year, default_target: 10000, night_targets: {}, active: true }
+  return { year, default_target: 10000, night_targets: {}, night_expenses: {}, active: true }
 }
 
 function computeNight(night: number, config: RamadanConfig, sponsors: RamadanSponsor[]): RamadanNightData {
@@ -279,4 +281,48 @@ export async function verifySlot(year: number, slotId: string): Promise<RamadanS
   const updated: RamadanSlot = { ...slot, status: 'SPONSORED', sponsored_at: new Date().toISOString() }
   memSlots.set(`${year}:${slotId}`, updated)
   return updated
+}
+
+// ── Receipt sequence number ───────────────────────────────────────────────────
+
+export async function getNextReceiptNumber(year: number): Promise<string> {
+  const r = await getRedis()
+  let seq: number
+  if (r) {
+    seq = await r.incr(`ramadan:${year}:receipt_seq`)
+  } else {
+    const cur = memReceiptSeq.get(year) ?? 0
+    seq = cur + 1
+    memReceiptSeq.set(year, seq)
+  }
+  return `RCP-${year}-${String(seq).padStart(4, '0')}`
+}
+
+// ── Audit event log ───────────────────────────────────────────────────────────
+
+function auditKey(year: number) { return `ramadan:${year}:audit` }
+
+export async function appendAuditEvent(year: number, event: Omit<AuditEvent, 'id' | 'timestamp'>): Promise<void> {
+  const full: AuditEvent = {
+    id: `AUD-${Math.random().toString(36).slice(2, 10).toUpperCase()}`,
+    timestamp: new Date().toISOString(),
+    ...event,
+  }
+  const r = await getRedis()
+  if (r) {
+    // Store as a capped list (last 1000 events)
+    const key = auditKey(year)
+    const existing = (await r.get<AuditEvent[]>(key)) ?? []
+    const updated = [...existing, full].slice(-1000)
+    await r.set(key, updated)
+  } else {
+    const existing = memAudit.get(year) ?? []
+    memAudit.set(year, [...existing, full].slice(-1000))
+  }
+}
+
+export async function getAuditEvents(year: number): Promise<AuditEvent[]> {
+  const r = await getRedis()
+  if (r) return (await r.get<AuditEvent[]>(auditKey(year))) ?? []
+  return memAudit.get(year) ?? []
 }

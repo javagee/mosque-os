@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import type { RamadanConfig, RamadanNightData, RamadanSlot } from '@/types'
+import type { RamadanConfig, RamadanNightData, RamadanSlot, AuditEvent } from '@/types'
 
 function sgd(cents: number) {
   return new Intl.NumberFormat('en-SG', { style: 'currency', currency: 'SGD', minimumFractionDigits: 0 }).format(cents / 100)
@@ -40,6 +40,44 @@ export default function RamadanAdminConfig({
   const [creatingSlots, setCreatingSlots] = useState(false)
   const [slotsCreated, setSlotsCreated] = useState(0)
   const [verifyingSlot, setVerifyingSlot] = useState<string | null>(null)
+  const [expenseNight, setExpenseNight] = useState('1')
+  const [expenseLabel, setExpenseLabel] = useState('')
+  const [expenseAmount, setExpenseAmount] = useState('')
+  const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([])
+  const [auditLoaded, setAuditLoaded] = useState(false)
+
+  async function loadAudit() {
+    if (auditLoaded) return
+    const res = await fetch('/api/admin/ramadan/audit')
+    if (res.ok) setAuditEvents(await res.json())
+    setAuditLoaded(true)
+  }
+
+  function handleAddExpense(e: React.FormEvent) {
+    e.preventDefault()
+    const night = parseInt(expenseNight)
+    const amount = Math.round(parseFloat(expenseAmount) * 100)
+    if (!expenseLabel.trim() || !amount) return
+    setConfig(c => ({
+      ...c,
+      night_expenses: {
+        ...c.night_expenses,
+        [night]: [...(c.night_expenses?.[night] ?? []), { label: expenseLabel.trim(), amount_cents: amount }],
+      },
+    }))
+    setExpenseLabel('')
+    setExpenseAmount('')
+  }
+
+  function handleRemoveExpense(night: number, idx: number) {
+    setConfig(c => ({
+      ...c,
+      night_expenses: {
+        ...c.night_expenses,
+        [night]: (c.night_expenses?.[night] ?? []).filter((_, i) => i !== idx),
+      },
+    }))
+  }
 
   async function handleSave() {
     setSaving(true)
@@ -312,6 +350,98 @@ export default function RamadanAdminConfig({
           </div>
         </div>
       )}
+
+      {/* Planned expenses editor */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <h2 className="font-bold text-[#1A3D2B] mb-1">Planned Expenses</h2>
+        <p className="text-xs text-gray-400 mb-4">Non-binding per-night budget line items. Saved with board settings.</p>
+
+        {/* Existing line items */}
+        {Object.entries(config.night_expenses ?? {}).filter(([, lines]) => lines.length > 0).map(([night, lines]) => (
+          <div key={night} className="mb-3">
+            <p className="text-xs font-semibold text-gray-500 mb-1">Night {night}</p>
+            <div className="space-y-1">
+              {lines.map((line, i) => (
+                <div key={i} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-1.5">
+                  <span className="text-sm text-gray-700">{line.label}</span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-semibold text-gray-700">{sgd(line.amount_cents)}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveExpense(parseInt(night), i)}
+                      className="text-xs text-red-400 hover:text-red-600"
+                    >Remove</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+
+        <form onSubmit={handleAddExpense} className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2">
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-1">Night</label>
+            <input type="number" min="1" max="30" value={expenseNight} onChange={e => setExpenseNight(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3D2B]/20" />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="block text-xs font-semibold text-gray-500 mb-1">Label</label>
+            <input type="text" placeholder="e.g. Food & beverage" value={expenseLabel} onChange={e => setExpenseLabel(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3D2B]/20" required />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-1">Amount (S$)</label>
+            <input type="number" min="0.01" step="0.01" placeholder="150" value={expenseAmount} onChange={e => setExpenseAmount(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3D2B]/20" required />
+          </div>
+          <div className="col-span-2 sm:col-span-4 flex gap-3 items-center">
+            <button type="submit"
+              className="px-4 py-2 bg-gray-800 text-white text-sm font-semibold rounded-xl hover:bg-gray-700 transition-colors">
+              Add line item
+            </button>
+            <span className="text-xs text-gray-400">Click &quot;Save settings&quot; above to persist changes.</span>
+          </div>
+        </form>
+      </div>
+
+      {/* Audit log */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-bold text-[#1A3D2B]">Audit Log</h2>
+          {!auditLoaded && (
+            <button onClick={loadAudit}
+              className="text-xs font-semibold text-[#1A3D2B] hover:underline">
+              Load events
+            </button>
+          )}
+        </div>
+        {!auditLoaded && (
+          <p className="text-xs text-gray-400">Click &quot;Load events&quot; to fetch the audit trail.</p>
+        )}
+        {auditLoaded && auditEvents.length === 0 && (
+          <p className="text-xs text-gray-400">No events recorded yet.</p>
+        )}
+        {auditEvents.length > 0 && (
+          <div className="space-y-1 max-h-96 overflow-y-auto">
+            {auditEvents.slice(0, 50).map(ev => (
+              <div key={ev.id} className="flex items-start gap-3 py-2 border-b border-gray-50 last:border-0">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-mono font-semibold text-[#1A3D2B] bg-emerald-50 px-1.5 py-0.5 rounded">{ev.action}</span>
+                    <span className="text-xs text-gray-500 truncate">{ev.entity_type} / {ev.entity_id}</span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-xs text-gray-400">{new Date(ev.timestamp).toLocaleString('en-SG', { timeZone: 'Asia/Singapore' })}</span>
+                    <span className="text-xs text-gray-300">·</span>
+                    <span className="text-xs text-gray-400">{ev.actor}</span>
+                    {ev.note && <span className="text-xs text-gray-400 italic truncate">{ev.note}</span>}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Nights overview table */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
