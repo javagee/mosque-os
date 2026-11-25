@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { getRamadanConfig, getRamadanNight } from '@/lib/ramadan-store'
+import { getRamadanConfig, getRamadanNight, getNightSlots } from '@/lib/ramadan-store'
 import NightSponsorForm from './NightSponsorForm'
+import SlotGrid from './SlotGrid'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,9 +22,10 @@ export default async function NightPage({ params }: { params: Promise<{ night: s
   if (isNaN(nightNum) || nightNum < 1 || nightNum > 30) notFound()
 
   const year = new Date().getFullYear()
-  const [config, night] = await Promise.all([
+  const [config, night, slots] = await Promise.all([
     getRamadanConfig(year),
     getRamadanNight(year, nightNum),
+    getNightSlots(year, nightNum),
   ])
 
   const mosqueName = process.env.NEXT_PUBLIC_MOSQUE_NAME ?? 'Our Mosque'
@@ -102,8 +104,13 @@ export default async function NightPage({ params }: { params: Promise<{ night: s
           </div>
         )}
 
-        {/* Sponsor form */}
-        {config.active && (
+        {/* Slot grid (shown when admin has created slots) */}
+        {config.active && slots.length > 0 && (
+          <SlotGrid slots={slots} night={nightNum} />
+        )}
+
+        {/* Open-amount sponsor form (shown when no slots, or as additional giving) */}
+        {config.active && slots.length === 0 && (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
             <h2 className="font-bold text-[#1A3D2B] text-sm mb-4">
               {night.status === 'sponsored' ? 'Add another contribution' : `Sponsor Night ${nightNum}`}

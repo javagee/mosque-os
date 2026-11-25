@@ -140,6 +140,26 @@ export interface RamadanConfig {
   hijri_month?: string              // e.g. "Ramadan 1446"
 }
 
+// ── Ramadan Cash Slots (Caliph BUMI spec) ────────────────────────────────────
+
+export interface RamadanSlot {
+  id: string                    // RSL-{8chars}
+  night: number                 // 1–30
+  year: number
+  amount: number                // in cents, e.g. 40000 = S$400
+  meal_type: 'IFTAR' | 'SAHUR' | 'GENERAL'
+  status: 'AVAILABLE' | 'HELD' | 'CLAIMED_PENDING' | 'SPONSORED'
+  hold_token?: string
+  hold_expires_at?: number      // unix timestamp (seconds)
+  booking_cutoff_at?: string    // ISO 8601 — no new holds/claims after this
+  donor_name?: string
+  donor_email?: string
+  donor_anonymous?: boolean
+  order_reference?: string
+  created_at: string
+  sponsored_at?: string
+}
+
 // ── Jemaah (Congregation) types ──────────────────────────────────────────────
 
 export interface Jemaah {

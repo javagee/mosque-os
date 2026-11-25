@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import type { RamadanConfig, RamadanNightData } from '@/types'
+import type { RamadanConfig, RamadanNightData, RamadanSlot } from '@/types'
 
 function sgd(cents: number) {
   return new Intl.NumberFormat('en-SG', { style: 'currency', currency: 'SGD', minimumFractionDigits: 0 }).format(cents / 100)
@@ -11,9 +11,11 @@ function sgd(cents: number) {
 export default function RamadanAdminConfig({
   config: initialConfig,
   nights,
+  pendingSlots = [],
 }: {
   config: RamadanConfig
   nights: RamadanNightData[]
+  pendingSlots?: RamadanSlot[]
 }) {
   const router = useRouter()
   const [config, setConfig] = useState(initialConfig)
@@ -22,6 +24,14 @@ export default function RamadanAdminConfig({
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [confirmingNight, setConfirmingNight] = useState<string | null>(null)
+  const [slotNight, setSlotNight] = useState('1')
+  const [slotAmount, setSlotAmount] = useState('400')
+  const [slotQty, setSlotQty] = useState('25')
+  const [slotMealType, setSlotMealType] = useState<'IFTAR' | 'SAHUR' | 'GENERAL'>('IFTAR')
+  const [slotDate, setSlotDate] = useState('')
+  const [creatingSlots, setCreatingSlots] = useState(false)
+  const [slotsCreated, setSlotsCreated] = useState(0)
+  const [verifyingSlot, setVerifyingSlot] = useState<string | null>(null)
 
   async function handleSave() {
     setSaving(true)
@@ -51,6 +61,35 @@ export default function RamadanAdminConfig({
       body: JSON.stringify({ reference: orderRef }),
     })
     setConfirmingNight(null)
+    router.refresh()
+  }
+
+  async function handleCreateSlots(e: React.FormEvent) {
+    e.preventDefault()
+    setCreatingSlots(true)
+    setSlotsCreated(0)
+    const res = await fetch(`/api/admin/ramadan/nights/${slotNight}/slots`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        amount_cents: Math.round(parseFloat(slotAmount) * 100),
+        quantity: parseInt(slotQty),
+        meal_type: slotMealType,
+        meal_civil_date: slotDate,
+      }),
+    })
+    if (res.ok) {
+      const data = await res.json()
+      setSlotsCreated(data.created)
+      router.refresh()
+    }
+    setCreatingSlots(false)
+  }
+
+  async function handleVerifySlot(slotId: string) {
+    setVerifyingSlot(slotId)
+    await fetch(`/api/admin/ramadan/slots/${slotId}/verify`, { method: 'POST' })
+    setVerifyingSlot(null)
     router.refresh()
   }
 
@@ -143,6 +182,85 @@ export default function RamadanAdminConfig({
                 </div>
               ))
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Create Cash Slots */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <h2 className="font-bold text-[#1A3D2B] mb-1">Create Cash Slots</h2>
+        <p className="text-xs text-gray-400 mb-4">Batch-create fixed-amount slots for a night (e.g. 25 × S$400 Iftar slots).</p>
+        <form onSubmit={handleCreateSlots} className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-1">Night (1–30)</label>
+            <input type="number" min="1" max="30" value={slotNight} onChange={e => setSlotNight(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3D2B]/20" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-1">Amount per slot (S$)</label>
+            <input type="number" min="1" value={slotAmount} onChange={e => setSlotAmount(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3D2B]/20" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-1">Quantity</label>
+            <input type="number" min="1" max="100" value={slotQty} onChange={e => setSlotQty(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3D2B]/20" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-1">Meal type</label>
+            <select value={slotMealType} onChange={e => setSlotMealType(e.target.value as 'IFTAR' | 'SAHUR' | 'GENERAL')}
+              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3D2B]/20">
+              <option value="IFTAR">Iftar (4 PM cutoff)</option>
+              <option value="SAHUR">Sahur (D-3 cutoff)</option>
+              <option value="GENERAL">General</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-1">Civil date (YYYY-MM-DD)</label>
+            <input type="date" value={slotDate} onChange={e => setSlotDate(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3D2B]/20" required />
+          </div>
+          <div className="flex items-end">
+            <button type="submit" disabled={creatingSlots}
+              className="w-full py-2 bg-[#1A3D2B] text-white text-sm font-semibold rounded-xl hover:bg-[#2D6A4F] disabled:opacity-50 transition-colors">
+              {creatingSlots ? 'Creating…' : 'Create Slots'}
+            </button>
+          </div>
+        </form>
+        {slotsCreated > 0 && (
+          <p className="text-sm text-emerald-600 font-semibold mt-3">{slotsCreated} slot(s) created.</p>
+        )}
+      </div>
+
+      {/* Pending slot verifications */}
+      {pendingSlots.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
+          <h2 className="font-bold text-amber-800 mb-3 text-sm">
+            Pending Slot Verifications ({pendingSlots.length})
+          </h2>
+          <div className="space-y-3">
+            {pendingSlots.map(slot => (
+              <div key={slot.id} className="bg-white rounded-xl p-3 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-gray-800">
+                    Night {slot.night} · {slot.meal_type} · {sgd(slot.amount)}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {slot.donor_anonymous ? 'Anonymous' : slot.donor_name} · {slot.donor_email}
+                  </p>
+                  {slot.order_reference && (
+                    <p className="text-xs font-mono text-gray-400">{slot.order_reference}</p>
+                  )}
+                </div>
+                <button
+                  onClick={() => handleVerifySlot(slot.id)}
+                  disabled={verifyingSlot === slot.id}
+                  className="px-3 py-1.5 bg-emerald-700 text-white text-xs font-semibold rounded-lg hover:bg-emerald-800 disabled:opacity-50 transition-colors whitespace-nowrap"
+                >
+                  {verifyingSlot === slot.id ? 'Verifying…' : 'Mark Sponsored'}
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       )}

@@ -1,6 +1,7 @@
 import AdminSidebarLayout from '@/components/admin/AdminSidebarLayout'
-import { getRamadanConfig, getAllRamadanNights } from '@/lib/ramadan-store'
+import { getRamadanConfig, getAllRamadanNights, getNightSlots } from '@/lib/ramadan-store'
 import RamadanAdminConfig from './RamadanAdminConfig'
+import type { RamadanSlot } from '@/types'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,10 +12,14 @@ function sgd(cents: number) {
 export default async function AdminRamadanPage() {
   const mosqueName = process.env.NEXT_PUBLIC_MOSQUE_NAME ?? 'Our Mosque'
   const year = new Date().getFullYear()
-  const [config, nights] = await Promise.all([
+  const [config, nights, ...allNightSlots] = await Promise.all([
     getRamadanConfig(year),
     getAllRamadanNights(year),
+    ...Array.from({ length: 30 }, (_, i) => getNightSlots(year, i + 1)),
   ])
+
+  const slots = (allNightSlots as RamadanSlot[][]).flat()
+  const pendingSlots = slots.filter(s => s.status === 'CLAIMED_PENDING')
 
   const sponsoredCount = nights.filter(n => n.status === 'sponsored').length
   const totalRaised = nights.reduce((s, n) => s + n.raised, 0)
@@ -58,7 +63,7 @@ export default async function AdminRamadanPage() {
           ))}
         </div>
 
-        <RamadanAdminConfig config={config} nights={nights} />
+        <RamadanAdminConfig config={config} nights={nights} pendingSlots={pendingSlots} />
       </div>
     </AdminSidebarLayout>
   )
